@@ -1,3 +1,1 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja"><head><title>{0}</title><link rel="stylesheet" type="text/css" href="stylesheet.css"/></head><body><h1>{0}</h1>{1}</body></html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja"><head><title>{0}</title><link rel="stylesheet" type="text/css" href="stylesheet.css"/></head><body><h1>{0}</h1>{1}</body></html>

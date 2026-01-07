@@ -1,5 +1,0 @@
-Usage:
-  narou-epub <NCODE> ...
-
-Arguments:
-  <NCODE> 小説家になろうの作品ＩＤ
