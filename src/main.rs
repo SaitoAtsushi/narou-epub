@@ -1,5 +1,5 @@
+mod command;
 mod narou;
-use clap::{Arg, ArgAction, Command, value_parser};
 use epub_builder::{
     EpubBuilder, EpubContent, EpubVersion, MetadataOpfV3, ReferenceType, ZipLibrary,
 };
@@ -129,58 +129,16 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
 }
 
 fn main() {
-    let command_parser = Command::new("narou-epub")
-        .disable_help_flag(true)
-        .disable_version_flag(true)
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .arg(
-            Arg::new("help")
-                .long("help")
-                .short('h')
-                .help("このヘルプを表示して終了します")
-                .action(ArgAction::Help)
-                .global(true),
-        )
-        .arg(
-            Arg::new("version")
-                .long("version")
-                .short('V')
-                .help("バージョンを表示します")
-                .action(ArgAction::Version)
-                .global(true),
-        )
-        .arg(
-            Arg::new("horizontal")
-                .help("生成される EPUB が横書きになります")
-                .long("horizontal")
-                .action(ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("wait")
-                .long("wait")
-                .short('w')
-                .value_name("秒")
-                .value_parser(value_parser!(f64))
-                .default_value("1.0"),
-        )
-        .arg(
-            Arg::new("ncodes")
-                .help("対象作品のNCODE")
-                .action(ArgAction::Append)
-                .value_name("NCODE")
-                .required(true),
-        );
-    let command = command_parser.get_matches();
-    let ncodes = command.get_many::<String>("ncodes").unwrap();
+    let cmd = match command::Cmd::parse() {
+        Err(e) => {
+            println!("{}", e);
+            std::process::exit(2);
+        }
+        Ok(s) => s,
+    };
 
-    for ncode in ncodes {
-        if let Err(x) = make_epub(
-            &ncode,
-            command.get_flag("horizontal"),
-            *command.get_one::<f64>("wait").unwrap(),
-        ) {
+    for ncode in cmd.ncodes {
+        if let Err(x) = make_epub(&ncode, cmd.horizontal, cmd.wait) {
             println!("{}", x);
             std::process::exit(2);
         }

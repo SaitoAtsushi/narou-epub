@@ -1,0 +1,12 @@
+小説家になろうの作品を EPUB3 に変換するツール
+
+Usage: narou-epub [OPTIONS] <NCODE>...
+
+Arguments:
+  <NCODE>...  対象作品のNCODE
+
+Options:
+  -h, --help        このヘルプを表示して終了します
+  -V, --version     バージョンを表示します
+      --horizontal  生成される EPUB が横書きになります
+  -w, --wait <秒>    [default: 1.0]
