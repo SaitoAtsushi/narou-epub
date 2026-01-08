@@ -23,8 +23,8 @@ impl Display for Error {
     }
 }
 
-impl From<reqwest::Error> for Error {
-    fn from(_: reqwest::Error) -> Self {
+impl From<minreq::Error> for Error {
+    fn from(_: minreq::Error) -> Self {
         Error::FetchFailed
     }
 }

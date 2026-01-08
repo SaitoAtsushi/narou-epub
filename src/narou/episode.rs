@@ -1,8 +1,7 @@
 pub use super::error::{Error, Result};
+use crate::narou::StatusCheck;
 use epub_builder::EpubContent;
 use regex::Regex;
-use reqwest::blocking::Client;
-use reqwest::header::LOCATION;
 use std::fmt::Display;
 use std::io::Cursor;
 
@@ -43,7 +42,6 @@ impl std::str::FromStr for ImageType {
 }
 
 pub struct EpisodeIter {
-    pub(super) client: Client,
     pub(super) cur: u32,
     pub(super) max: u32,
     pub(super) series: bool,
@@ -82,17 +80,15 @@ impl EpisodeIter {
             let m = caps.get(0).unwrap();
             out.push_str(&html[last..m.start()]);
             let image_url = caps.get(1).unwrap().as_str().to_string();
-            let image_url = "https://".to_string() + &image_url;
-            let rel_image_url = self
-                .client
-                .get(image_url.as_str())
+            let image_url = "https:".to_string() + &image_url;
+            let rel_image_url = minreq::get(image_url.as_str())
+                .with_header("User-Agent", super::AGENT_NAME)
+                .with_follow_redirects(false)
                 .send()?
-                .headers()
-                .get(LOCATION)
+                .headers
+                .get("location")
                 .ok_or(Error::InvalidData)?
-                .to_str()
-                .or(Err(Error::FetchFailed))?
-                .to_string();
+                .clone();
             let re = Regex::new("\\.([^.]+)$").unwrap();
             let image_type = re
                 .captures(&rel_image_url)
@@ -101,12 +97,11 @@ impl EpisodeIter {
                 .ok_or(Error::InvalidImageType)?
                 .as_str()
                 .to_string();
-            let image_body = self
-                .client
-                .get(&rel_image_url)
+            let image_body = minreq::get(&rel_image_url)
+                .with_header("User-Agent", super::AGENT_NAME)
                 .send()?
                 .error_for_status()?
-                .bytes()?
+                .as_bytes()
                 .to_vec();
             let image_name = format!("{:05}_{:03}.{}", self.cur, counter, image_type);
             counter += 1;
@@ -125,7 +120,12 @@ impl EpisodeIter {
         } else {
             format!("https://ncode.syosetu.com/{}", self.ncode)
         };
-        let text = self.client.get(uri).send()?.error_for_status()?.text()?;
+        let text = minreq::get(uri)
+            .with_header("User-Agent", super::AGENT_NAME)
+            .send()?
+            .error_for_status()?
+            .as_str()?
+            .to_string();
         let matcher = Regex::new(if self.series {
             include_str!("extract.txt")
         } else {

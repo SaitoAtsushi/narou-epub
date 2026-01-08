@@ -3,10 +3,10 @@ mod error;
 use chrono::{DateTime, FixedOffset, NaiveDateTime, TimeZone, Utc};
 use episode::EpisodeIter;
 pub use error::{Error, Result};
-use reqwest::{blocking::*, redirect::Policy};
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
-const AGENT_NAME: &str = "narou-epub-agent/1.0";
+
+pub const AGENT_NAME: &str = "narou-epub-agent/1.0";
 
 pub struct Novel {
     ncode: String,
@@ -26,13 +26,32 @@ fn parse_jst_to_utc(s: &str) -> Result<DateTime<Utc>> {
     Ok(jst_dt.with_timezone(&Utc))
 }
 
+trait StatusCheck {
+    fn error_for_status(self) -> Result<Self>
+    where
+        Self: Sized;
+}
+
+impl StatusCheck for minreq::Response {
+    fn error_for_status(self) -> Result<Self> {
+        if self.status_code == 200 {
+            Ok(self)
+        } else {
+            Err(Error::FetchFailed)
+        }
+    }
+}
+
 impl Novel {
     pub fn new(ncode: &str) -> Result<Self> {
-        let client = Client::builder().user_agent(AGENT_NAME).build()?;
         let uri = format!(
             "https://api.syosetu.com/novelapi/api/?ncode={ncode}&out=json&of=t-nu-s-w-u-nt-ga"
         );
-        let response: Value = client.get(uri).send()?.error_for_status()?.json()?;
+        let response: Value = minreq::get(uri)
+            .with_header("User-Agent", AGENT_NAME)
+            .send()?
+            .error_for_status()?
+            .json()?;
         let allcount = response.pointer("/0/allcount").ok_or(Error::InvalidData)?;
         if allcount != &json!(1) {
             return Err(Error::InvalidData);
@@ -58,7 +77,11 @@ impl Novel {
             "https://api.syosetu.com/userapi/api/?userid={}&out=json&of=y",
             novel_data.userid
         );
-        let response: Value = client.get(uri).send()?.error_for_status()?.json()?;
+        let response: Value = minreq::get(uri)
+            .with_header("User-Agent", AGENT_NAME)
+            .send()?
+            .error_for_status()?
+            .json()?;
         let allcount = response.pointer("/0/allcount").ok_or(Error::InvalidData)?;
         if allcount != &json!(1) {
             return Err(Error::InvalidData);
@@ -83,12 +106,7 @@ impl Novel {
     }
 
     pub fn episodes(&self) -> Result<EpisodeIter> {
-        let client = Client::builder()
-            .user_agent(AGENT_NAME)
-            .redirect(Policy::none())
-            .build()?;
         Ok(EpisodeIter {
-            client,
             cur: 1,
             max: self.episode,
             series: self.series,

@@ -58,7 +58,6 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
         xml_lang: None,
         content: format!("https://ncode.syosetu.com/{}/", ncode),
     };
-
     builder.add_metadata_opf(Box::new(file_as_meta));
     builder.add_metadata_opf(Box::new(source_page_meta));
     builder.set_uuid(uuid);
