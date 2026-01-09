@@ -1,11 +1,10 @@
-mod episode;
+pub mod episode;
 mod error;
 use chrono::{DateTime, FixedOffset, NaiveDateTime, TimeZone, Utc};
 use episode::EpisodeIter;
 pub use error::{Error, Result};
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
-
 pub const AGENT_NAME: &str = "narou-epub-agent/1.0";
 
 pub struct Novel {

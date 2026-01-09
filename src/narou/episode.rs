@@ -6,25 +6,32 @@ use std::fmt::Display;
 use std::io::Cursor;
 
 pub enum ImageType {
-    JPG,
-    PNG,
-    GIF,
+    Jpg,
+    Png,
+    Gif,
 }
+
+pub struct ImageInfo {
+    pub name: String,
+    pub image_type: ImageType,
+    pub body: Vec<u8>,
+}
+
 pub struct Episode {
     pub number: u32,
     pub chapter: Option<String>,
     pub title: String,
     pub body: String,
     pub series: bool,
-    pub images: Vec<(String, ImageType, Vec<u8>)>,
+    pub images: Vec<ImageInfo>,
 }
 
 impl Display for ImageType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &ImageType::JPG => write!(f, "image/jpeg"),
-            &ImageType::PNG => write!(f, "image/png"),
-            &ImageType::GIF => write!(f, "iamge/gif"),
+        match *self {
+            ImageType::Jpg => write!(f, "image/jpeg"),
+            ImageType::Png => write!(f, "image/png"),
+            ImageType::Gif => write!(f, "iamge/gif"),
         }
     }
 }
@@ -33,9 +40,9 @@ impl std::str::FromStr for ImageType {
     type Err = Error;
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
-            "jpg" => Ok(ImageType::JPG),
-            "png" => Ok(ImageType::PNG),
-            "gif" => Ok(ImageType::GIF),
+            "jpg" => Ok(ImageType::Jpg),
+            "png" => Ok(ImageType::Png),
+            "gif" => Ok(ImageType::Gif),
             _ => Err(Error::InvalidImageType),
         }
     }
@@ -70,13 +77,13 @@ impl EpisodeIter {
         corrected.to_string()
     }
 
-    fn image_url_replace(&self, html: &str) -> Result<(String, Vec<(String, ImageType, Vec<u8>)>)> {
+    fn image_url_replace(&self, html: &str) -> Result<(String, Vec<ImageInfo>)> {
         let mut out = String::new();
         let mut image_urls = Vec::new();
         let mut last = 0;
         let re = Regex::new("<img src=\"([^\"]+)\" />").unwrap();
-        let mut counter = 0;
-        for caps in re.captures_iter(html) {
+        let extract_extension = Regex::new("\\.([^.]+)$").unwrap();
+        for (counter, caps) in re.captures_iter(html).enumerate() {
             let m = caps.get(0).unwrap();
             out.push_str(&html[last..m.start()]);
             let image_url = caps.get(1).unwrap().as_str().to_string();
@@ -89,8 +96,7 @@ impl EpisodeIter {
                 .get("location")
                 .ok_or(Error::InvalidData)?
                 .clone();
-            let re = Regex::new("\\.([^.]+)$").unwrap();
-            let image_type = re
+            let image_type = extract_extension
                 .captures(&rel_image_url)
                 .ok_or(Error::InvalidImageType)?
                 .get(1)
@@ -104,9 +110,12 @@ impl EpisodeIter {
                 .as_bytes()
                 .to_vec();
             let image_name = format!("{:05}_{:03}.{}", self.cur, counter, image_type);
-            counter += 1;
             let image_tag = format!("<img src=\"{}\" />", image_name);
-            image_urls.push((image_name, image_type.parse()?, image_body));
+            image_urls.push(ImageInfo {
+                name: image_name,
+                image_type: image_type.parse()?,
+                body: image_body,
+            });
             out.push_str(&image_tag);
             last = m.end();
         }
@@ -149,7 +158,7 @@ impl EpisodeIter {
                 title,
                 body,
                 series: self.series,
-                images: images,
+                images,
             }
         } else {
             let body = Self::correct(captured.get(1).ok_or(Error::InvalidData)?.as_str());
@@ -160,7 +169,7 @@ impl EpisodeIter {
                 title: "本文".to_string(),
                 body,
                 series: self.series,
-                images: images,
+                images,
             }
         })
     }

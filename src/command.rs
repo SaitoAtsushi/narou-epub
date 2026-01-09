@@ -24,17 +24,13 @@ impl std::fmt::Display for Error {
     }
 }
 
+#[derive(Default)]
 enum State {
+    #[default]
     Start,
     Options,
     Wait,
     Ncodes,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::Start
-    }
 }
 
 impl Cmd {
@@ -63,7 +59,7 @@ impl Cmd {
                         return Err(Error::Version(command_name.unwrap()));
                     }
                     "--" => State::Ncodes,
-                    s if s.chars().next() == Some('-') => {
+                    s if s.starts_with('-') => {
                         return Err(Error::UnknownOption);
                     }
                     _ => {
@@ -81,7 +77,7 @@ impl Cmd {
                 }
             }
         }
-        if ncodes.len() == 0 {
+        if ncodes.is_empty() {
             return Err(Error::Help);
         }
         Ok(Self {

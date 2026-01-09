@@ -4,6 +4,7 @@ use epub_builder::{
     EpubBuilder, EpubContent, EpubVersion, MetadataOpfV3, ReferenceType, ZipLibrary,
 };
 use indicatif::{ProgressBar, ProgressStyle};
+use narou::episode::ImageInfo;
 use sanitize_filename::sanitize;
 use std::fs::File;
 use std::thread;
@@ -109,8 +110,13 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
             chapter_number += 1;
             prev_chapter = episode.chapter.clone();
         };
-        for (name, image_type, image_body) in std::mem::take(&mut episode.images) {
-            builder.add_resource(name, image_body.as_slice(), image_type.to_string())?;
+        for ImageInfo {
+            name,
+            image_type,
+            body,
+        } in std::mem::take(&mut episode.images)
+        {
+            builder.add_resource(name, body.as_slice(), image_type.to_string())?;
         }
         let content: EpubContent<std::io::Cursor<String>> = episode.into();
         builder.add_content(content)?;
