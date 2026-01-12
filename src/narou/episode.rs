@@ -1,9 +1,9 @@
 pub use super::error::{Error, Result};
-use crate::narou::StatusCheck;
-use epub_builder::EpubContent;
+use crate::epub::Escape;
+use crate::narou::{StatusCheck, unescape};
 use regex::Regex;
 use std::fmt::Display;
-use std::io::Cursor;
+use unescape::Unescape;
 
 pub enum ImageType {
     Jpg,
@@ -145,13 +145,12 @@ impl EpisodeIter {
         Ok(if self.series {
             let body = Self::correct(captured.get(3).ok_or(Error::InvalidData)?.as_str());
             let (body, images) = self.image_url_replace(&body)?;
-            let chapter = captured
-                .get(1)
-                .map(|x| html_escape::decode_html_entities(regex::Match::as_str(&x)).to_string());
-            let title = html_escape::decode_html_entities(
-                captured.get(2).ok_or(Error::InvalidData)?.as_str(),
-            )
-            .to_string();
+            let chapter = captured.get(1).map(|x| regex::Match::as_str(&x).unescape());
+            let title = captured
+                .get(2)
+                .ok_or(Error::InvalidData)?
+                .as_str()
+                .unescape();
             Episode {
                 number: self.cur,
                 chapter,
@@ -194,28 +193,11 @@ impl Display for Episode {
             write!(
                 f,
                 include_str!("episode.txt"),
-                html_escape::encode_text(&self.title),
+                self.title.escape(),
                 &self.body
             )
         } else {
             write!(f, include_str!("short_episode.txt"), &self.body)
-        }
-    }
-}
-
-impl From<Episode> for EpubContent<std::io::Cursor<String>> {
-    fn from(episode: Episode) -> Self {
-        if episode.series {
-            EpubContent::new(
-                format!("{:05}.xhtml", episode.number),
-                std::io::Cursor::<String>::new(episode.to_string()),
-            )
-            .title(episode.title.clone())
-            .level(if episode.chapter.is_none() { 1 } else { 2 })
-        } else {
-            EpubContent::new("body.xhtml", Cursor::<String>::new(episode.to_string()))
-                .title("本文")
-                .level(1)
         }
     }
 }

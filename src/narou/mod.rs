@@ -1,10 +1,12 @@
 pub mod episode;
 mod error;
+mod unescape;
 use chrono::{DateTime, FixedOffset, NaiveDateTime, TimeZone, Utc};
 use episode::EpisodeIter;
 pub use error::{Error, Result};
 use serde::Deserialize;
 use serde_json::{Value, from_value, json};
+use unescape::Unescape;
 pub const AGENT_NAME: &str = "narou-epub-agent/1.0";
 
 pub struct Novel {
@@ -94,8 +96,8 @@ impl Novel {
             from_value(object.clone()).or(Err(Error::InvalidData))?;
         Ok(Novel {
             ncode: ncode.to_string(),
-            title: html_escape::decode_html_entities(&novel_data.title).to_string(),
-            author_name: html_escape::decode_html_entities(&novel_data.writer).to_string(),
+            title: novel_data.title.unescape(),
+            author_name: novel_data.writer.unescape(),
             author_yomigana: user_data.yomikata,
             last_update: parse_jst_to_utc(novel_data.novelupdated_at.as_str())?,
             story: novel_data.story.to_string(),

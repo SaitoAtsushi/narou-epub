@@ -35,8 +35,8 @@ impl From<regex::Error> for Error {
     }
 }
 
-impl From<epub_builder::Error> for Error {
-    fn from(_: epub_builder::Error) -> Self {
+impl From<zip_builder::Error> for Error {
+    fn from(_: zip_builder::Error) -> Self {
         Error::EpubBuildFailed
     }
 }
