@@ -41,8 +41,8 @@ impl From<zip_builder::Error> for Error {
     }
 }
 
-impl From<chrono::ParseError> for Error {
-    fn from(_: chrono::ParseError) -> Self {
+impl From<super::super::epub::time::Error> for Error {
+    fn from(_: super::super::epub::time::Error) -> Self {
         Error::InvalidData
     }
 }

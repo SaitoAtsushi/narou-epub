@@ -2,9 +2,10 @@ use std::fs::File;
 use zip_builder::{Level, Result, ZipArchive};
 mod escape;
 mod id;
-use chrono::SecondsFormat;
+pub mod time;
 pub use escape::Escape;
 use id::{IdIter, ItemId};
+use time::Time;
 use uuid::Uuid;
 
 #[derive(PartialEq)]
@@ -83,7 +84,7 @@ pub struct Epub<'a> {
     zip: ZipArchive<'a, File>,
     title: String,
     author: Option<(String, String)>,
-    modified: Option<chrono::DateTime<chrono::Utc>>,
+    modified: Option<Time>,
     description: Option<String>,
     source: Option<String>,
     contents: Vec<ContentMetadata>,
@@ -238,7 +239,7 @@ impl<'a> Epub<'a> {
         self
     }
 
-    pub fn set_modified(&mut self, modified: chrono::DateTime<chrono::Utc>) -> &mut Self {
+    pub fn set_modified(&mut self, modified: Time) -> &mut Self {
         self.modified = Some(modified);
         self
     }
@@ -330,10 +331,7 @@ impl<'a> Epub<'a> {
         };
 
         let modified = if let Some(ref modified) = self.modified {
-            format!(
-                r#"<meta property="dcterms:modified">{}</meta>"#,
-                modified.to_rfc3339_opts(SecondsFormat::Secs, true)
-            )
+            format!(r#"<meta property="dcterms:modified">{}</meta>"#, modified)
         } else {
             "".to_string()
         };

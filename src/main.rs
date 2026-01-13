@@ -58,7 +58,7 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
     );
     // builder.set_uuid(uuid);
     epub.set_title(novel.title().to_string());
-    epub.set_modified(novel.last_update());
+    epub.set_modified(novel.last_update().clone());
     epub.set_description(novel.story().to_string());
     epub.add_resource(
         "style.css",

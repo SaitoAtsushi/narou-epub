@@ -1,7 +1,7 @@
 pub mod episode;
 mod error;
 mod unescape;
-use chrono::{DateTime, FixedOffset, NaiveDateTime, TimeZone, Utc};
+use crate::epub::time::Time;
 use episode::EpisodeIter;
 pub use error::{Error, Result};
 use serde::Deserialize;
@@ -14,17 +14,10 @@ pub struct Novel {
     title: String,
     author_name: String,
     author_yomigana: String,
-    last_update: DateTime<Utc>,
+    last_update: Time,
     story: String,
     series: bool,
     episode: u32,
-}
-
-fn parse_jst_to_utc(s: &str) -> Result<DateTime<Utc>> {
-    let naive = NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")?;
-    let jst = FixedOffset::east_opt(9 * 3600).unwrap();
-    let jst_dt = jst.from_local_datetime(&naive).single().unwrap();
-    Ok(jst_dt.with_timezone(&Utc))
 }
 
 trait StatusCheck {
@@ -99,7 +92,7 @@ impl Novel {
             title: novel_data.title.unescape(),
             author_name: novel_data.writer.unescape(),
             author_yomigana: user_data.yomikata,
-            last_update: parse_jst_to_utc(novel_data.novelupdated_at.as_str())?,
+            last_update: novel_data.novelupdated_at.parse()?,
             story: novel_data.story.to_string(),
             series,
             episode: novel_data.general_all_no,
@@ -131,8 +124,8 @@ impl Novel {
         &self.story
     }
 
-    pub fn last_update(&self) -> DateTime<Utc> {
-        self.last_update
+    pub fn last_update(&self) -> &Time {
+        &self.last_update
     }
 
     pub fn episode(&self) -> u32 {
