@@ -66,7 +66,7 @@ impl<T: IdPolicy> std::fmt::Display for Id<T> {
         n /= T::FIRST_LETTER.len();
         while n != 0 {
             f.write_char(T::LETTER[n % T::LETTER.len()].into())?;
-            n /= 62;
+            n /= T::LETTER.len();
         }
         Ok(())
     }
