@@ -1,16 +1,15 @@
 mod command;
 mod epub;
 mod narou;
-use epub::{Epub, Escape, MediaType};
+use crate::epub::ReferenceType;
+use crate::narou::episode::ImageType;
+use epub::{Epub, Escape, IdIter, MediaType, NameId};
 use indicatif::{ProgressBar, ProgressStyle};
 use narou::episode::ImageInfo;
 use sanitize_filename::sanitize;
 use std::fs::File;
 use std::thread;
 use std::time::Duration;
-
-use crate::epub::ReferenceType;
-use crate::narou::episode::ImageType;
 
 fn make_title_page(novel: &narou::Novel) -> String {
     format!(
@@ -86,24 +85,24 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
         make_title_page(&novel).as_bytes(),
     )?;
     let mut prev_chapter: Option<String> = None;
-    let mut chapter_number = 1;
+    let mut filename_iter = IdIter::<NameId>::new();
     for i in novel.episodes()? {
         pb.inc(1);
         let mut episode = i?;
+        // 新しい章の始まり
         if prev_chapter != episode.chapter {
             let chapter_title = episode
                 .chapter
                 .as_deref()
                 .ok_or(narou::Error::InvalidData)?;
             epub.add_content(
-                format!("chapter_{:04}.xhtml", chapter_number).as_str(),
+                format!("{}.xhtml", filename_iter.next().unwrap()).as_str(),
                 chapter_title,
                 MediaType::Xhtml,
                 1,
                 ReferenceType::Text,
                 make_chapter(chapter_title).as_bytes(),
             )?;
-            chapter_number += 1;
             prev_chapter = episode.chapter.clone();
         };
         for ImageInfo {
@@ -114,13 +113,13 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
         {
             epub.add_resource(
                 name.as_str(),
-                image_type_to_media_type(ImageType::from(image_type)),
+                image_type_to_media_type(image_type),
                 ReferenceType::Image,
                 &body,
             )?;
         }
         epub.add_content(
-            format!("{:05}.xhtml", episode.number).as_str(),
+            format!("{}.xhtml", filename_iter.next().unwrap()).as_str(),
             &episode.title,
             MediaType::Xhtml,
             if episode.chapter.is_none() { 1 } else { 2 },

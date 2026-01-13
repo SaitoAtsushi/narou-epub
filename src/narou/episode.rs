@@ -1,5 +1,6 @@
 pub use super::error::{Error, Result};
 use crate::epub::Escape;
+use crate::epub::NameId;
 use crate::narou::{StatusCheck, unescape};
 use regex::Regex;
 use std::fmt::Display;
@@ -18,6 +19,7 @@ pub struct ImageInfo {
 }
 
 pub struct Episode {
+    #[allow(dead_code)]
     pub number: u32,
     pub chapter: Option<String>,
     pub title: String,
@@ -53,6 +55,7 @@ pub struct EpisodeIter {
     pub(super) max: u32,
     pub(super) series: bool,
     pub(super) ncode: String,
+    pub(super) id: crate::epub::IdIter<NameId>,
 }
 
 impl EpisodeIter {
@@ -77,13 +80,13 @@ impl EpisodeIter {
         corrected.to_string()
     }
 
-    fn image_url_replace(&self, html: &str) -> Result<(String, Vec<ImageInfo>)> {
+    fn image_url_replace(&mut self, html: &str) -> Result<(String, Vec<ImageInfo>)> {
         let mut out = String::new();
         let mut image_urls = Vec::new();
         let mut last = 0;
         let re = Regex::new("<img src=\"([^\"]+)\" />").unwrap();
         let extract_extension = Regex::new("\\.([^.]+)$").unwrap();
-        for (counter, caps) in re.captures_iter(html).enumerate() {
+        for caps in re.captures_iter(html) {
             let m = caps.get(0).unwrap();
             out.push_str(&html[last..m.start()]);
             let image_url = caps.get(1).unwrap().as_str().to_string();
@@ -109,7 +112,7 @@ impl EpisodeIter {
                 .error_for_status()?
                 .as_bytes()
                 .to_vec();
-            let image_name = format!("{:05}_{:03}.{}", self.cur, counter, image_type);
+            let image_name = format!("{}.{}", self.id.next().unwrap(), image_type);
             let image_tag = format!("<img src=\"{}\" />", image_name);
             image_urls.push(ImageInfo {
                 name: image_name,

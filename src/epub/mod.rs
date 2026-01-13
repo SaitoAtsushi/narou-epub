@@ -4,7 +4,8 @@ mod escape;
 mod id;
 pub mod time;
 pub use escape::Escape;
-use id::{IdIter, ItemId};
+pub use id::{IdIter, ItemId, NameId};
+use id::Id;
 use time::Time;
 use uuid::Uuid;
 
@@ -56,14 +57,14 @@ struct ContentMetadata {
     media_type: MediaType,
     reftype: ReferenceType,
     level: u32,
-    id: ItemId,
+    id: Id<ItemId>,
 }
 
 struct ResourceMetadata {
     name: String,
     media_type: MediaType,
     reftype: ReferenceType,
-    id: ItemId,
+    id: Id<ItemId>,
 }
 
 pub enum Direction {
@@ -90,7 +91,7 @@ pub struct Epub<'a> {
     contents: Vec<ContentMetadata>,
     resources: Vec<ResourceMetadata>,
     direction: Direction,
-    id_iter: IdIter,
+    id_iter: IdIter<ItemId>,
 }
 
 struct Manifest<'a, 'b> {
@@ -360,7 +361,7 @@ impl<'a> Epub<'a> {
 
     pub fn finish(&mut self) -> Result<()> {
         self.add_resource(
-            "nav.xhtml",
+            "_nav.xhtml",
             MediaType::Xhtml,
             ReferenceType::Navi,
             self.make_topic().to_string().as_bytes(),

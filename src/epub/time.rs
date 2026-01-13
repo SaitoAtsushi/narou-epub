@@ -5,7 +5,7 @@ use std::str::FromStr;
 #[derive(PartialEq, Debug)]
 pub enum Error {
     UnexpectedChar,
-    UnexpectedTermination,
+    EarlyTermination,
     UnexpectedRange,
 }
 
@@ -25,7 +25,7 @@ fn is_some_and_nums<T: Iterator<Item = char>>(iter: &mut T, count: u32) -> Resul
         acc = acc * 10
             + iter
                 .next()
-                .ok_or(Error::UnexpectedTermination)?
+                .ok_or(Error::EarlyTermination)?
                 .to_digit(10)
                 .ok_or(Error::UnexpectedChar)?;
     }
@@ -55,7 +55,7 @@ impl FromStr for Time {
         let minute = is_some_and_nums(&mut iter, 2)? as u8;
         is_some_and_same(iter.next(), ':')?;
         let second = is_some_and_nums(&mut iter, 2)? as u8;
-        if iter.next() != None {
+        if iter.next().is_some() {
             return Err(Error::UnexpectedChar);
         }
 
@@ -124,7 +124,7 @@ impl Time {
             } else {
                 (12, 1u16)
             };
-            let year = year - u16::from(bf);
+            let year = year - bf;
 
             Ok(Time {
                 year,
@@ -135,7 +135,7 @@ impl Time {
                 second,
             })
         } else {
-            return Err(Error::UnexpectedRange);
+            Err(Error::UnexpectedRange)
         }
     }
 }

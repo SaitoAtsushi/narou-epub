@@ -8,6 +8,7 @@ use serde::Deserialize;
 use serde_json::{Value, from_value, json};
 use unescape::Unescape;
 pub const AGENT_NAME: &str = "narou-epub-agent/1.0";
+use crate::epub::{IdIter, NameId};
 
 pub struct Novel {
     ncode: String,
@@ -105,6 +106,7 @@ impl Novel {
             max: self.episode,
             series: self.series,
             ncode: self.ncode.clone(),
+            id: IdIter::<NameId>::new()
         })
     }
 
