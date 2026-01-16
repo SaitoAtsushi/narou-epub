@@ -4,11 +4,10 @@ mod unescape;
 use crate::epub::time::Time;
 use episode::EpisodeIter;
 pub use error::{Error, Result};
-use serde::Deserialize;
-use serde_json::{Value, from_value, json};
 use unescape::Unescape;
 pub const AGENT_NAME: &str = "narou-epub-agent/1.0";
 use crate::epub::{IdIter, NameId};
+use crate::json::{JsonNode, Query};
 
 pub struct Novel {
     ncode: String,
@@ -42,61 +41,88 @@ impl Novel {
         let uri = format!(
             "https://api.syosetu.com/novelapi/api/?ncode={ncode}&out=json&of=t-nu-s-w-u-nt-ga"
         );
-        let response: Value = minreq::get(uri)
+        let response: JsonNode = minreq::get(uri)
             .with_header("User-Agent", AGENT_NAME)
             .send()?
             .error_for_status()?
-            .json()?;
-        let allcount = response.pointer("/0/allcount").ok_or(Error::InvalidData)?;
-        if allcount != &json!(1) {
+            .as_str()
+            .map_err(|_| Error::InvalidData)?
+            .parse()?;
+        let allcount = Query::new()
+            .get(0)
+            .get("allcount")
+            .execute(&response)
+            .and_then(JsonNode::get_number)
+            .ok_or(Error::InvalidData)?;
+        if allcount != 1 {
             return Err(Error::InvalidData);
         };
-        let object = response.pointer("/1").ok_or(Error::InvalidData)?;
-        #[derive(Deserialize)]
-        struct NovelDataApiResult {
-            title: String,
-            userid: u32,
-            writer: String,
-            noveltype: u32,
-            story: String,
-            general_all_no: u32,
-            novelupdated_at: String,
-        }
-        let novel_data: NovelDataApiResult =
-            from_value(object.clone()).or(Err(Error::InvalidData))?;
-        if novel_data.noveltype != 1 && novel_data.noveltype != 2 {
-            return Err(Error::InvalidData);
+        let object = response.get(1).ok_or(Error::InvalidData)?;
+        let title = object
+            .get("title")
+            .and_then(JsonNode::get_string)
+            .ok_or(Error::InvalidData)?
+            .unescape();
+        let series = match object.get("noveltype") {
+            Some(JsonNode::Number(1)) => true,
+            Some(JsonNode::Number(2)) => false,
+            _ => return Err(Error::InvalidData),
         };
-        let series = novel_data.noveltype == 1;
-        let uri = format!(
-            "https://api.syosetu.com/userapi/api/?userid={}&out=json&of=y",
-            novel_data.userid
-        );
-        let response: Value = minreq::get(uri)
+        let userid: u32 = object
+            .get("userid")
+            .and_then(JsonNode::get_number)
+            .ok_or(Error::InvalidData)?;
+        let author_name = object
+            .get("writer")
+            .and_then(JsonNode::get_string)
+            .ok_or(Error::InvalidData)?
+            .unescape();
+        let story = object
+            .get("story")
+            .and_then(JsonNode::get_string)
+            .ok_or(Error::InvalidData)?
+            .unescape();
+        let last_update: Time = object
+            .get("novelupdated_at")
+            .and_then(JsonNode::get_string)
+            .ok_or(Error::InvalidData)?
+            .parse()?;
+        let episode = object
+            .get("general_all_no")
+            .and_then(JsonNode::get_number)
+            .ok_or(Error::InvalidData)?;
+        let uri = format!("https://api.syosetu.com/userapi/api/?userid={userid}&out=json&of=y",);
+        let response: JsonNode = minreq::get(uri)
             .with_header("User-Agent", AGENT_NAME)
             .send()?
             .error_for_status()?
-            .json()?;
-        let allcount = response.pointer("/0/allcount").ok_or(Error::InvalidData)?;
-        if allcount != &json!(1) {
+            .as_str()
+            .map_err(|_| Error::InvalidData)?
+            .parse()?;
+        let allcount = Query::new()
+            .get(0)
+            .get("allcount")
+            .execute(&response)
+            .and_then(JsonNode::get_number)
+            .ok_or(Error::InvalidData)?;
+        if allcount != 1 {
             return Err(Error::InvalidData);
         };
-        let object = response.pointer("/1").ok_or(Error::InvalidData)?;
-        #[derive(Deserialize)]
-        struct UserDataApiResult {
-            yomikata: String,
-        }
-        let user_data: UserDataApiResult =
-            from_value(object.clone()).or(Err(Error::InvalidData))?;
+        let author_yomigana = Query::new()
+            .get(1)
+            .get("yomikata")
+            .execute(&response)
+            .and_then(JsonNode::get_string)
+            .ok_or(Error::InvalidData)?;
         Ok(Novel {
             ncode: ncode.to_string(),
-            title: novel_data.title.unescape(),
-            author_name: novel_data.writer.unescape(),
-            author_yomigana: user_data.yomikata,
-            last_update: novel_data.novelupdated_at.parse()?,
-            story: novel_data.story.to_string(),
+            title: title,
+            author_name,
+            author_yomigana,
+            last_update,
+            story,
             series,
-            episode: novel_data.general_all_no,
+            episode,
         })
     }
 
@@ -106,7 +132,7 @@ impl Novel {
             max: self.episode,
             series: self.series,
             ncode: self.ncode.clone(),
-            id: IdIter::<NameId>::new()
+            id: IdIter::<NameId>::new(),
         })
     }
 

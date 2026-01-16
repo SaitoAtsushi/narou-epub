@@ -53,4 +53,10 @@ impl From<indicatif::style::TemplateError> for Error {
     }
 }
 
+impl From<super::super::json::Error> for Error {
+    fn from(_: super::super::json::Error) -> Self {
+        Error::InvalidData
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
