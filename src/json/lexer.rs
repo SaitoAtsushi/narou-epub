@@ -125,7 +125,7 @@ impl<'a, T: Iterator<Item = char>> Tokens<'a, T> {
             }
             '0' => Ok(JsonValue::Number(0).into()),
             ch @ '1'..='9' => {
-                let mut acc: u32 = ch.to_digit(10).unwrap().into();
+                let mut acc: u32 = ch.to_digit(10).unwrap();
                 loop {
                     let ch = self.iter.next();
                     match ch {
@@ -133,7 +133,7 @@ impl<'a, T: Iterator<Item = char>> Tokens<'a, T> {
                             self.unget(ch);
                         }
                         Some(ch) if ch.is_ascii_digit() => {
-                            acc = acc * 10 + u32::from(ch.to_digit(10).unwrap());
+                            acc = acc * 10 + ch.to_digit(10).unwrap();
                         }
                         _ => {
                             self.unget(ch);

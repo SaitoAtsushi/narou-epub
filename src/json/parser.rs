@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 pub use super::lexer::JsonToken;
 use super::lexer::{Error as LexerError, JsonValue, Tokens};
 use std::convert::From;
@@ -6,6 +5,7 @@ use std::ops::Index;
 use std::str::FromStr;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Error {
     ImpossibleConversion,
     EarlyTerminate,
@@ -18,8 +18,6 @@ impl std::convert::From<LexerError> for Error {
         Error::TokenizeFailure(value)
     }
 }
-
-type JsonArray = Vec<JsonNode>;
 
 #[derive(Debug, PartialEq)]
 pub enum JsonNode {
@@ -168,11 +166,11 @@ impl FromStr for JsonNode {
 }
 
 pub trait JsonKey {
-    fn get<'a>(self, json: &'a JsonNode) -> Option<&'a JsonNode>;
+    fn get(self, json: &JsonNode) -> Option<&JsonNode>;
 }
 
 impl JsonKey for usize {
-    fn get<'a>(self, json: &'a JsonNode) -> Option<&'a JsonNode> {
+    fn get(self, json: &JsonNode) -> Option<&JsonNode> {
         if let JsonNode::Array(arr) = json {
             arr.get(self)
         } else {
@@ -182,7 +180,7 @@ impl JsonKey for usize {
 }
 
 impl JsonKey for &str {
-    fn get<'a>(self, json: &'a JsonNode) -> Option<&'a JsonNode> {
+    fn get(self, json: &JsonNode) -> Option<&JsonNode> {
         if let JsonNode::Object(arr) = json {
             arr.iter().find_map(|(k, v)| (k == self).then_some(v))
         } else {
@@ -198,7 +196,7 @@ impl JsonNode {
 
     pub fn get_string(&self) -> Option<String> {
         match self {
-            &JsonNode::String(ref s) => Some(s.clone()),
+            JsonNode::String(s) => Some(s.clone()),
             _ => None,
         }
     }

@@ -44,9 +44,9 @@ impl Query {
     pub fn execute<'a>(&self, json: &'a JsonNode) -> Option<&'a JsonNode> {
         let mut j = json;
         for i in &self.items {
-            j = match i {
-                &QueryItem::Index(n) => j.get(n)?,
-                &QueryItem::Key(ref k) => j.get(k.as_str())?,
+            j = match *i {
+                QueryItem::Index(n) => j.get(n)?,
+                QueryItem::Key(ref k) => j.get(k.as_str())?,
             }
         }
         Some(j)

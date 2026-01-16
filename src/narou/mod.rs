@@ -116,7 +116,7 @@ impl Novel {
             .ok_or(Error::InvalidData)?;
         Ok(Novel {
             ncode: ncode.to_string(),
-            title: title,
+            title,
             author_name,
             author_yomigana,
             last_update,
