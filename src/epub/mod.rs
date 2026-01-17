@@ -3,11 +3,11 @@ use zip_builder::{Level, Result, ZipArchive};
 mod escape;
 mod id;
 pub mod time;
+use super::uuid::UUIDv5;
 pub use escape::Escape;
-pub use id::{IdIter, ItemId, NameId};
 use id::Id;
+pub use id::{IdIter, ItemId, NameId};
 use time::Time;
-use uuid::Uuid;
 
 #[derive(PartialEq)]
 pub enum ReferenceType {
@@ -322,7 +322,7 @@ impl<'a> Epub<'a> {
         };
 
         let source = if let Some(ref source) = self.source {
-            let uuid = Uuid::new_v5(&Uuid::NAMESPACE_URL, source.as_bytes());
+            let uuid = UUIDv5::new(source.as_bytes()).unwrap();
             format!(
                 r#"<dc:identifier id="epub-id">urn:uuid:{}</dc:identifier><meta property="dcterms:source">{}</meta>"#,
                 uuid, source
