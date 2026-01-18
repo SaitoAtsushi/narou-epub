@@ -11,8 +11,10 @@ use indicator::Indicator;
 use narou::episode::ImageInfo;
 use sanitize_filename::sanitize;
 use std::fs::File;
+use std::sync::atomic::AtomicBool;
 use std::thread;
 use std::time::Duration;
+use windows_sys::Win32::System::Console::SetConsoleCtrlHandler;
 
 fn make_title_page(novel: &narou::Novel) -> String {
     format!(
@@ -88,6 +90,9 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
     let mut prev_chapter: Option<String> = None;
     let mut filename_iter = IdIter::<NameId>::new();
     for i in novel.episodes()? {
+        if INTERRUPTED.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(narou::Error::Interrupted);
+        }
         if let Some(pb) = pb.as_mut() {
             pb.increment();
         }
@@ -135,6 +140,13 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
     Ok(())
 }
 
+static INTERRUPTED: AtomicBool = AtomicBool::new(false);
+
+unsafe extern "system" fn handler(_: u32) -> i32 {
+    INTERRUPTED.store(true, std::sync::atomic::Ordering::SeqCst);
+    1
+}
+
 fn main() {
     let cmd = match command::Cmd::parse() {
         Err(e) => {
@@ -143,6 +155,9 @@ fn main() {
         }
         Ok(s) => s,
     };
+
+    // CTRL+C を押された場合を処理するハンドラを追加
+    unsafe { SetConsoleCtrlHandler(Some(handler), 1) };
 
     for ncode in cmd.ncodes {
         if let Err(x) = make_epub(&ncode, cmd.horizontal, cmd.wait) {
