@@ -8,13 +8,15 @@ license = "MIT"
 authors = ["SaitoAtsushi <maldikulo@gmail.com>"]
 
 [dependencies]
-indicatif = "0.18.3"
 minreq = { version = "2.14.1", features = ["https-native"] }
 regex = { version = "1", default-features = false, features = ["std"] }
 sanitize-filename = "0.6.0"
 windows-sys = { version = "0.61.2", features = [
     "Win32_Security_Cryptography",
     "Win32_Foundation",
+    "Win32_System_Console",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
 ] }
 zip-builder = { git = "https://github.com/SaitoAtsushi/zip-builder.git", tag = "0.1" }
 

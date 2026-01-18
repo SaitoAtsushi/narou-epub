@@ -7,7 +7,6 @@ pub enum Error {
     InvalidData,
     InvalidImageType,
     EpubBuildFailed,
-    IndicatorFailed,
 }
 
 impl Display for Error {
@@ -18,7 +17,6 @@ impl Display for Error {
             Error::InvalidData => write!(f, "データの形式が想定したものではありませんでした。"),
             Error::InvalidImageType => write!(f, "想定していない画像タイプです。"),
             Error::EpubBuildFailed => write!(f, "ePub の生成に失敗しました。"),
-            Error::IndicatorFailed => write!(f, "進捗表示に失敗しました。"),
         }
     }
 }
@@ -44,12 +42,6 @@ impl From<zip_builder::Error> for Error {
 impl From<super::super::epub::time::Error> for Error {
     fn from(_: super::super::epub::time::Error) -> Self {
         Error::InvalidData
-    }
-}
-
-impl From<indicatif::style::TemplateError> for Error {
-    fn from(_: indicatif::style::TemplateError) -> Self {
-        Error::IndicatorFailed
     }
 }
 

@@ -1,12 +1,13 @@
 mod command;
 mod epub;
-mod narou;
+mod indicator;
 mod json;
+mod narou;
 mod uuid;
 use crate::epub::ReferenceType;
 use crate::narou::episode::ImageType;
 use epub::{Epub, Escape, IdIter, MediaType, NameId};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicator::Indicator;
 use narou::episode::ImageInfo;
 use sanitize_filename::sanitize;
 use std::fs::File;
@@ -41,10 +42,8 @@ fn image_type_to_media_type(it: ImageType) -> MediaType {
 fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<(), narou::Error> {
     let ncode = ncode_validate_and_normalize(ncode).ok_or(narou::Error::InvalidNcode)?;
     let novel = narou::Novel::new(&ncode)?;
-    let pb = ProgressBar::new(novel.episode().into()).with_message(novel.title().to_string());
-    pb.set_style(ProgressStyle::with_template(
-        "{msg}\n{spinner:.green} [{wide_bar:.cyan/blue}] {pos}/{len}",
-    )?);
+    println!("{}", novel.title());
+    let mut pb = Indicator::new(novel.episode()).ok();
     let mut file = File::create(format!(
         "[{}] {}.epub",
         sanitize(novel.author_name()),
@@ -89,7 +88,9 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
     let mut prev_chapter: Option<String> = None;
     let mut filename_iter = IdIter::<NameId>::new();
     for i in novel.episodes()? {
-        pb.inc(1);
+        if let Some(pb) = pb.as_mut() {
+            pb.increment();
+        }
         let mut episode = i?;
         // 新しい章の始まり
         if prev_chapter != episode.chapter {
@@ -131,7 +132,6 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
         thread::sleep(Duration::from_millis((wait * 1000.0) as u64));
     }
     epub.finish()?;
-    pb.finish();
     Ok(())
 }
 
