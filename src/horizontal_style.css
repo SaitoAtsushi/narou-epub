@@ -1,16 +1,13 @@
-ol {
-  list-style-type: none;
-  padding: 0;
+html, body {
+  height: 100%;
+  width: 100%;
   margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 p {
   margin: 0;
-}
-
-body {
-  margin: 0;
-  padding: 0;
 }
 
 img {
@@ -22,13 +19,15 @@ img {
   margin: 0 auto;
 }
 
-body.chapter-titlepage {
-  position: relative;
+body.titlepage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
 
-body.chapter-titlepage h1 {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+body.titlepage h1 {
+  margin: 0;
+  padding: 1em;
+  text-align: center;
 }
