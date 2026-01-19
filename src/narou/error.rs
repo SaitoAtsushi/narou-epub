@@ -8,6 +8,7 @@ pub enum Error {
     InvalidImageType,
     EpubBuildFailed,
     Interrupted,
+    OverWriteFail,
 }
 
 impl Display for Error {
@@ -18,7 +19,8 @@ impl Display for Error {
             Error::InvalidData => write!(f, "データの形式が想定したものではありませんでした。"),
             Error::InvalidImageType => write!(f, "想定していない画像タイプです。"),
             Error::EpubBuildFailed => write!(f, "ePub の生成に失敗しました。"),
-            Error::Interrupted => write!(f, "処理が中断されました。")
+            Error::Interrupted => write!(f, "処理が中断されました。"),
+            Error::OverWriteFail => write!(f, "既存の同名ファイルに上書き出来ませんでした。")
         }
     }
 }

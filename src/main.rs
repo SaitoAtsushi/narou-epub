@@ -11,10 +11,90 @@ use indicator::Indicator;
 use narou::episode::ImageInfo;
 use sanitize_filename::sanitize;
 use std::fs::File;
+use std::os::windows::io::{FromRawHandle, OwnedHandle};
 use std::sync::atomic::AtomicBool;
 use std::thread;
 use std::time::Duration;
+use windows_sys::Win32::Storage::FileSystem::GetTempFileNameW;
 use windows_sys::Win32::System::Console::SetConsoleCtrlHandler;
+use windows_sys::{
+    Win32::{
+        Foundation::{GENERIC_WRITE, GetLastError, INVALID_HANDLE_VALUE, MAX_PATH, WIN32_ERROR},
+        Storage::FileSystem::{CreateFileW, OPEN_EXISTING},
+    },
+    w,
+};
+
+#[derive(Debug)]
+struct TemporaryFile {
+    true_name: String,
+    temporary_name: String,
+    pub handle: Option<File>,
+}
+
+impl TemporaryFile {
+    pub fn new(true_name: &str) -> Result<Self, WIN32_ERROR> {
+        unsafe {
+            let mut temporary_name = [0; MAX_PATH as usize];
+            if GetTempFileNameW(w!("."), w!("etf"), 0, temporary_name.as_mut_ptr()) == 0 {
+                Err(GetLastError())
+            } else {
+                let handle = CreateFileW(
+                    temporary_name.as_ptr(),
+                    GENERIC_WRITE,
+                    0,
+                    std::ptr::null(),
+                    OPEN_EXISTING,
+                    0,
+                    std::ptr::null_mut(),
+                );
+                if handle == INVALID_HANDLE_VALUE {
+                    Err(GetLastError())
+                } else {
+                    let zero = temporary_name
+                        .into_iter()
+                        .enumerate()
+                        .find(|(_, e)| *e == 0u16)
+                        .and_then(|x| Some(x.0))
+                        .unwrap_or(temporary_name.len() as usize);
+                    let temporary_name = String::from_utf16_lossy(&temporary_name[0..zero]);
+                    Ok(Self {
+                        temporary_name,
+                        true_name: true_name.to_string(),
+                        handle: Some(OwnedHandle::from_raw_handle(handle).into()),
+                    })
+                }
+            }
+        }
+    }
+
+    pub fn finish(&mut self) -> Result<(), narou::Error> {
+        if let Some(handle) = std::mem::take(&mut self.handle) {
+            drop(handle);
+            if std::fs::rename(&self.temporary_name, &self.true_name).is_err() {
+                if std::fs::remove_file(&self.temporary_name).is_err() {
+                    Err(narou::Error::OverWriteFail)
+                } else {
+                    Ok(std::fs::rename(&self.temporary_name, &self.true_name)
+                        .or(Err(narou::Error::OverWriteFail))?)
+                }
+            } else {
+                Ok(())
+            }
+        } else {
+            panic!();
+        }
+    }
+}
+
+impl Drop for TemporaryFile {
+    fn drop(&mut self) {
+        if let Some(handle) = std::mem::take(&mut self.handle) {
+            drop(handle);
+            let _ = std::fs::remove_file(&self.temporary_name);
+        }
+    }
+}
 
 fn make_title_page(novel: &narou::Novel) -> String {
     format!(
@@ -44,15 +124,15 @@ fn image_type_to_media_type(it: ImageType) -> MediaType {
 fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<(), narou::Error> {
     let ncode = ncode_validate_and_normalize(ncode).ok_or(narou::Error::InvalidNcode)?;
     let novel = narou::Novel::new(&ncode)?;
-    println!("{}", novel.title());
+    eprintln!("{}", novel.title());
     let mut pb = Indicator::new(novel.episode()).ok();
-    let mut file = File::create(format!(
+    let mut temporary = TemporaryFile::new(&format!(
         "[{}] {}.epub",
         sanitize(novel.author_name()),
         sanitize(novel.title())
     ))
     .or(Err(narou::Error::EpubBuildFailed))?;
-    let mut epub = Epub::new(&mut file)?;
+    let mut epub = Epub::new(temporary.handle.as_mut().unwrap())?;
     epub.set_source(format!("https://ncode.syosetu.com/{}/", ncode));
     epub.set_author(
         novel.author_name().to_string(),
@@ -137,6 +217,8 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
         thread::sleep(Duration::from_millis((wait * 1000.0) as u64));
     }
     epub.finish()?;
+    drop(epub);
+    temporary.finish()?;
     Ok(())
 }
 
