@@ -1,9 +1,6 @@
 html, body {
-  height: 100%;
-  width: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 p {
@@ -12,9 +9,7 @@ p {
 
 img {
   max-width: 100%;
-  max-height: 100vh;
-  width: auto;
-  height: auto;
+  max-height: 100%;
   display: block;
   margin: 0 auto;
 }
@@ -24,6 +19,9 @@ body.titlepage {
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
 }
 
 body.titlepage h1 {
