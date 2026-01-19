@@ -5,7 +5,7 @@ use crate::epub::time::Time;
 use episode::EpisodeIter;
 pub use error::{Error, Result};
 use unescape::Unescape;
-pub const AGENT_NAME: &str = "narou-epub-agent/1.0";
+pub const AGENT_NAME: &str = concat!("narou-epub-agent/", env!("CARGO_PKG_VERSION"));
 use crate::epub::{IdIter, NameId};
 use crate::json::{JsonNode, Query};
 
