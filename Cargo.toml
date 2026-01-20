@@ -10,7 +10,6 @@ authors = ["SaitoAtsushi <maldikulo@gmail.com>"]
 [dependencies]
 minreq = { version = "2.14.1", features = ["https-native"] }
 regex = { version = "1", default-features = false, features = ["std"] }
-sanitize-filename = "0.6.0"
 windows-sys = { version = "0.61.2", features = [
     "Win32_Security_Cryptography",
     "Win32_Foundation",
