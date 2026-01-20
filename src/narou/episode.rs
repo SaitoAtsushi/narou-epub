@@ -2,7 +2,7 @@ pub use super::error::{Error, Result};
 use crate::epub::Escape;
 use crate::epub::NameId;
 use crate::narou::{StatusCheck, unescape};
-use regex::Regex;
+use regex_lite::{Regex, Captures, Match};
 use std::fmt::Display;
 use unescape::Unescape;
 
@@ -64,7 +64,7 @@ impl EpisodeIter {
             "(?:(\n)|(<p id=\"L[0-9]+\">)|(<br>)|(<a [^>]*>)|(</a>)|<img src=\"([^\"]+)\" [^/]*/>)",
         )
         .unwrap();
-        let corrected = matcher.replace_all(s, |captures: &regex::Captures<'_>| {
+        let corrected = matcher.replace_all(s, |captures: &Captures<'_>| {
             if captures.get(2).is_some() {
                 "<p>".to_string()
             } else if captures.get(3).is_some() {
@@ -148,7 +148,7 @@ impl EpisodeIter {
         Ok(if self.series {
             let body = Self::correct(captured.get(3).ok_or(Error::InvalidData)?.as_str());
             let (body, images) = self.image_url_replace(&body)?;
-            let chapter = captured.get(1).map(|x| regex::Match::as_str(&x).unescape());
+            let chapter = captured.get(1).map(|x| Match::as_str(&x).unescape());
             let title = captured
                 .get(2)
                 .ok_or(Error::InvalidData)?

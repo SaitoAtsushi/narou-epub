@@ -25,6 +25,7 @@ use windows_sys::{
     },
     w,
 };
+use regex_lite::Regex;
 
 #[derive(Debug)]
 struct TemporaryFile {
@@ -110,7 +111,7 @@ fn make_chapter(title: &str) -> String {
 }
 
 fn ncode_validate_and_normalize(s: &str) -> Option<String> {
-    let valid_pattern = regex::Regex::new("(?i-u)^n[0-9]{4}[[:alpha:]]{0,3}$").unwrap();
+    let valid_pattern = Regex::new("(?i-u)^n[0-9]{4}[[:alpha:]]{0,3}$").unwrap();
     valid_pattern.is_match(s).then_some(s.to_lowercase())
 }
 

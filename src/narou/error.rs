@@ -31,8 +31,8 @@ impl From<minreq::Error> for Error {
     }
 }
 
-impl From<regex::Error> for Error {
-    fn from(_: regex::Error) -> Self {
+impl From<regex_lite::Error> for Error {
+    fn from(_: regex_lite::Error) -> Self {
         Error::InvalidData
     }
 }
