@@ -61,7 +61,7 @@ pub struct EpisodeIter {
 impl EpisodeIter {
     fn correct(s: &str) -> String {
         let matcher = Regex::new(
-            "(?:(\n)|(<p id=\"L[0-9]+\">)|(<br>)|(<a [^>]*?>)|(</a>)|<img src=\"([^\"]+)\" [^/]*?/>)",
+            "(?:(\n)|(<p id=\"L[0-9]+\">)|(<br>)|(<a [^>]*>)|(</a>)|<img src=\"([^\"]+)\" [^/]*/>)",
         )
         .unwrap();
         let corrected = matcher.replace_all(s, |captures: &regex::Captures<'_>| {
