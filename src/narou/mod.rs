@@ -1,13 +1,16 @@
 pub mod episode;
 mod error;
+mod internet;
 mod unescape;
 use crate::epub::time::Time;
 use episode::EpisodeIter;
 pub use error::{Error, Result};
+use std::io::Read;
 use unescape::Unescape;
 pub const AGENT_NAME: &str = concat!("narou-epub-agent/", env!("CARGO_PKG_VERSION"));
 use crate::epub::{IdIter, NameId};
 use crate::json::{JsonNode, Query};
+use internet::Internet;
 
 pub struct Novel {
     ncode: String,
@@ -20,34 +23,18 @@ pub struct Novel {
     episode: u32,
 }
 
-trait StatusCheck {
-    fn error_for_status(self) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-impl StatusCheck for minreq::Response {
-    fn error_for_status(self) -> Result<Self> {
-        if self.status_code == 200 {
-            Ok(self)
-        } else {
-            Err(Error::FetchFailed)
-        }
-    }
-}
-
 impl Novel {
     pub fn new(ncode: &str) -> Result<Self> {
         let uri = format!(
             "https://api.syosetu.com/novelapi/api/?ncode={ncode}&out=json&of=t-nu-s-w-u-nt-ga"
         );
-        let response: JsonNode = minreq::get(uri)
-            .with_header("User-Agent", AGENT_NAME)
-            .send()?
+        let internet = Internet::new()?;
+        let mut response = String::new();
+        internet
+            .open(&uri)?
             .error_for_status()?
-            .as_str()
-            .map_err(|_| Error::InvalidData)?
-            .parse()?;
+            .read_to_string(&mut response)?;
+        let response: JsonNode = response.parse()?;
         let allcount = Query::new()
             .get(0)
             .get("allcount")
@@ -92,13 +79,12 @@ impl Novel {
             .and_then(JsonNode::get_number)
             .ok_or(Error::InvalidData)?;
         let uri = format!("https://api.syosetu.com/userapi/api/?userid={userid}&out=json&of=y",);
-        let response: JsonNode = minreq::get(uri)
-            .with_header("User-Agent", AGENT_NAME)
-            .send()?
+        let mut response = String::new();
+        internet
+            .open(&uri)?
             .error_for_status()?
-            .as_str()
-            .map_err(|_| Error::InvalidData)?
-            .parse()?;
+            .read_to_string(&mut response)?;
+        let response: JsonNode = response.parse()?;
         let allcount = Query::new()
             .get(0)
             .get("allcount")

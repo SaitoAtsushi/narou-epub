@@ -3,13 +3,14 @@ mod epub;
 mod indicator;
 mod json;
 mod narou;
-mod uuid;
 mod sanitize;
+mod uuid;
 use crate::epub::ReferenceType;
 use crate::narou::episode::ImageType;
 use epub::{Epub, Escape, IdIter, MediaType, NameId};
 use indicator::Indicator;
 use narou::episode::ImageInfo;
+use regex_lite::Regex;
 use sanitize::sanitize;
 use std::fs::File;
 use std::os::windows::io::{FromRawHandle, OwnedHandle};
@@ -25,7 +26,6 @@ use windows_sys::{
     },
     w,
 };
-use regex_lite::Regex;
 
 #[derive(Debug)]
 struct TemporaryFile {

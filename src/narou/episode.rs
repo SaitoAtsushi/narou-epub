@@ -1,10 +1,12 @@
+use super::Internet;
 pub use super::error::{Error, Result};
+use super::internet::Query;
+use super::unescape::Unescape;
 use crate::epub::Escape;
 use crate::epub::NameId;
-use crate::narou::{StatusCheck, unescape};
-use regex_lite::{Regex, Captures, Match};
+use regex_lite::{Captures, Match, Regex};
 use std::fmt::Display;
-use unescape::Unescape;
+use std::io::Read;
 
 pub enum ImageType {
     Jpg,
@@ -81,6 +83,7 @@ impl EpisodeIter {
     }
 
     fn image_url_replace(&mut self, html: &str) -> Result<(String, Vec<ImageInfo>)> {
+        let internet = Internet::new()?;
         let mut out = String::new();
         let mut image_urls = Vec::new();
         let mut last = 0;
@@ -91,14 +94,7 @@ impl EpisodeIter {
             out.push_str(&html[last..m.start()]);
             let image_url = caps.get(1).unwrap().as_str().to_string();
             let image_url = "https:".to_string() + &image_url;
-            let rel_image_url = minreq::get(image_url.as_str())
-                .with_header("User-Agent", super::AGENT_NAME)
-                .with_follow_redirects(false)
-                .send()?
-                .headers
-                .get("location")
-                .ok_or(Error::InvalidData)?
-                .clone();
+            let rel_image_url = internet.open(image_url.as_str())?.header(Query::Location)?;
             let image_type = extract_extension
                 .captures(&rel_image_url)
                 .ok_or(Error::InvalidImageType)?
@@ -106,12 +102,9 @@ impl EpisodeIter {
                 .ok_or(Error::InvalidImageType)?
                 .as_str()
                 .to_string();
-            let image_body = minreq::get(&rel_image_url)
-                .with_header("User-Agent", super::AGENT_NAME)
-                .send()?
-                .error_for_status()?
-                .as_bytes()
-                .to_vec();
+            let mut response = internet.open(&rel_image_url)?.error_for_status()?;
+            let mut image_body = Vec::<u8>::new();
+            response.read_to_end(&mut image_body)?;
             let image_name = format!("{}.{}", self.id.next().unwrap(), image_type);
             let image_tag = format!("<img src=\"{}\" />", image_name);
             image_urls.push(ImageInfo {
@@ -132,12 +125,12 @@ impl EpisodeIter {
         } else {
             format!("https://ncode.syosetu.com/{}", self.ncode)
         };
-        let text = minreq::get(uri)
-            .with_header("User-Agent", super::AGENT_NAME)
-            .send()?
+        let internet = Internet::new()?;
+        let mut text = String::new();
+        internet
+            .open(&uri)?
             .error_for_status()?
-            .as_str()?
-            .to_string();
+            .read_to_string(&mut text)?;
         let matcher = Regex::new(if self.series {
             include_str!("extract.txt")
         } else {

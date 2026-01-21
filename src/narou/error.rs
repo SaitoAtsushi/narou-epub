@@ -1,4 +1,6 @@
 use std::fmt::Display;
+use super::internet;
+// use windows_sys::Win32::Foundation::WIN32_ERROR;
 
 #[derive(Debug)]
 pub enum Error {
@@ -9,6 +11,8 @@ pub enum Error {
     EpubBuildFailed,
     Interrupted,
     OverWriteFail,
+    SystemError(u32),
+    IOError,
 }
 
 impl Display for Error {
@@ -20,14 +24,19 @@ impl Display for Error {
             Error::InvalidImageType => write!(f, "想定していない画像タイプです。"),
             Error::EpubBuildFailed => write!(f, "ePub の生成に失敗しました。"),
             Error::Interrupted => write!(f, "処理が中断されました。"),
-            Error::OverWriteFail => write!(f, "既存の同名ファイルに上書き出来ませんでした。")
+            Error::OverWriteFail => write!(f, "既存の同名ファイルに上書き出来ませんでした。"),
+            Error::SystemError(n) => write!(f, "ウィンドウズのシステムエラーです。 ({})", n),
+            Error::IOError => write!(f, "データの読み書きに失敗しました。"),
         }
     }
 }
 
-impl From<minreq::Error> for Error {
-    fn from(_: minreq::Error) -> Self {
-        Error::FetchFailed
+impl From<internet::Error> for Error {
+    fn from(value: internet::Error) -> Self {
+        match value {
+            internet::Error::SystemError(n) => Self::SystemError(n),
+            _ => Error::FetchFailed,
+        }
     }
 }
 
@@ -52,6 +61,12 @@ impl From<super::super::epub::time::Error> for Error {
 impl From<super::super::json::Error> for Error {
     fn from(_: super::super::json::Error) -> Self {
         Error::InvalidData
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(_: std::io::Error) -> Self {
+        Error::IOError
     }
 }
 
