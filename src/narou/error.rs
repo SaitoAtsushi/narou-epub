@@ -8,11 +8,11 @@ pub enum Error {
     FetchFailed,
     InvalidData,
     InvalidImageType,
-    EpubBuildFailed,
+    EpubBuildFailure,
     Interrupted,
     OverWriteFail,
-    SystemError(u32),
-    IOError,
+    SystemErrorCode(u32),
+    IoFailure,
     UnknownImageType,
 }
 
@@ -23,11 +23,11 @@ impl Display for Error {
             Error::FetchFailed => write!(f, "データの取得に失敗しました。"),
             Error::InvalidData => write!(f, "データの形式が想定したものではありませんでした。"),
             Error::InvalidImageType => write!(f, "想定していない画像タイプです。"),
-            Error::EpubBuildFailed => write!(f, "ePub の生成に失敗しました。"),
+            Error::EpubBuildFailure => write!(f, "ePub の生成に失敗しました。"),
             Error::Interrupted => write!(f, "処理が中断されました。"),
             Error::OverWriteFail => write!(f, "既存の同名ファイルに上書き出来ませんでした。"),
-            Error::SystemError(n) => write!(f, "ウィンドウズのシステムエラーです。 ({})", n),
-            Error::IOError => write!(f, "データの読み書きに失敗しました。"),
+            Error::SystemErrorCode(n) => write!(f, "ウィンドウズのシステムエラーです。 ({})", n),
+            Error::IoFailure => write!(f, "データの読み書きに失敗しました。"),
             Error::UnknownImageType => write!(f, "知らない画像形式に遭遇しました。"),
         }
     }
@@ -36,7 +36,7 @@ impl Display for Error {
 impl From<internet::Error> for Error {
     fn from(value: internet::Error) -> Self {
         match value {
-            internet::Error::SystemError(n) => Self::SystemError(n),
+            internet::Error::SystemErrorCode(n) => Self::SystemErrorCode(n),
             _ => Error::FetchFailed,
         }
     }
@@ -50,7 +50,7 @@ impl From<regex_lite::Error> for Error {
 
 impl From<zip_builder::Error> for Error {
     fn from(_: zip_builder::Error) -> Self {
-        Error::EpubBuildFailed
+        Error::EpubBuildFailure
     }
 }
 
@@ -68,7 +68,7 @@ impl From<super::super::json::Error> for Error {
 
 impl From<std::io::Error> for Error {
     fn from(_: std::io::Error) -> Self {
-        Error::IOError
+        Error::IoFailure
     }
 }
 

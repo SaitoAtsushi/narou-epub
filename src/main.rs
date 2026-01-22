@@ -57,8 +57,8 @@ impl TemporaryFile {
                         .into_iter()
                         .enumerate()
                         .find(|(_, e)| *e == 0u16)
-                        .and_then(|x| Some(x.0))
-                        .unwrap_or(temporary_name.len() as usize);
+                        .map(|x| x.0)
+                        .unwrap_or(temporary_name.len());
                     let temporary_name = String::from_utf16_lossy(&temporary_name[0..zero]);
                     Ok(Self {
                         temporary_name,
@@ -133,7 +133,7 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
         sanitize(novel.author_name()),
         sanitize(novel.title())
     ))
-    .or(Err(narou::Error::EpubBuildFailed))?;
+    .or(Err(narou::Error::EpubBuildFailure))?;
     let mut epub = Epub::new(temporary.handle.as_mut().unwrap())?;
     epub.set_source(format!("https://ncode.syosetu.com/{}/", ncode));
     epub.set_author(

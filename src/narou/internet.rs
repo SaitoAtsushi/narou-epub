@@ -8,7 +8,7 @@ use windows_sys::Win32::Networking::WinInet::*;
 
 #[derive(Debug)]
 pub enum Error {
-    SystemError(u32),
+    SystemErrorCode(u32),
     InvalidCharCode,
     BadStatus,
 }
@@ -17,7 +17,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 impl From<WIN32_ERROR> for Error {
     fn from(value: WIN32_ERROR) -> Self {
-        Error::SystemError(value)
+        Error::SystemErrorCode(value)
     }
 }
 
@@ -135,8 +135,7 @@ impl Response {
 
     pub fn header(&self, query: Query) -> Result<String> {
         unsafe {
-            let mut buffer = Vec::<u8>::new();
-            buffer.resize(100, 0);
+            let mut buffer = vec![0; 100];
             let mut buflen = buffer.len() as u32;
 
             'b: loop {

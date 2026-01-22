@@ -9,7 +9,6 @@ authors = ["SaitoAtsushi <maldikulo@gmail.com>"]
 publish = false
 
 [dependencies]
-# minreq = { version = "2.14.1", features = ["https-native"] }
 regex-lite = "0.1"
 windows-sys = { version = "0.61.2", features = [
     "Win32_Security_Cryptography",
