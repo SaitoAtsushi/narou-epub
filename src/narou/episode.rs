@@ -162,12 +162,10 @@ impl EpisodeIter {
             let (chapter, title, body) = Self::extract(&text).ok_or(Error::InvalidData)?;
             let body = Self::correct(body);
             let (body, images) = self.image_url_replace(&body)?;
-            let chapter = chapter.map(|x| x.unescape());
-            let title = title.unescape();
             Episode {
                 number: self.cur,
-                chapter,
-                title,
+                chapter: chapter.map(|x| x.unescape()),
+                title: title.unescape(),
                 body,
                 series: self.series,
                 images,
