@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use super::internet;
+use std::fmt::Display;
 // use windows_sys::Win32::Foundation::WIN32_ERROR;
 
 #[derive(Debug)]
@@ -13,6 +13,7 @@ pub enum Error {
     OverWriteFail,
     SystemError(u32),
     IOError,
+    UnknownImageType,
 }
 
 impl Display for Error {
@@ -27,6 +28,7 @@ impl Display for Error {
             Error::OverWriteFail => write!(f, "既存の同名ファイルに上書き出来ませんでした。"),
             Error::SystemError(n) => write!(f, "ウィンドウズのシステムエラーです。 ({})", n),
             Error::IOError => write!(f, "データの読み書きに失敗しました。"),
+            Error::UnknownImageType => write!(f, "知らない画像形式に遭遇しました。"),
         }
     }
 }

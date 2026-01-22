@@ -33,9 +33,9 @@ pub struct Episode {
 impl Display for ImageType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            ImageType::Jpg => write!(f, "image/jpeg"),
-            ImageType::Png => write!(f, "image/png"),
-            ImageType::Gif => write!(f, "iamge/gif"),
+            ImageType::Jpg => write!(f, "jpg"),
+            ImageType::Png => write!(f, "png"),
+            ImageType::Gif => write!(f, "gif"),
         }
     }
 }
@@ -48,6 +48,20 @@ impl std::str::FromStr for ImageType {
             "png" => Ok(ImageType::Png),
             "gif" => Ok(ImageType::Gif),
             _ => Err(Error::InvalidImageType),
+        }
+    }
+}
+
+impl ImageType {
+    fn from_extension(s: &str) -> Result<Self> {
+        if s.ends_with(".jpg") {
+            Ok(ImageType::Jpg)
+        } else if s.ends_with(".png") {
+            Ok(ImageType::Png)
+        } else if s.ends_with(".gif") {
+            Ok(ImageType::Gif)
+        } else {
+            Err(Error::UnknownImageType)
         }
     }
 }
@@ -88,20 +102,13 @@ impl EpisodeIter {
         let mut image_urls = Vec::new();
         let mut last = 0;
         let re = Regex::new("<img src=\"([^\"]+)\" />").unwrap();
-        let extract_extension = Regex::new("\\.([^.]+)$").unwrap();
         for caps in re.captures_iter(html) {
             let m = caps.get(0).unwrap();
             out.push_str(&html[last..m.start()]);
             let image_url = caps.get(1).unwrap().as_str().to_string();
             let image_url = "https:".to_string() + &image_url;
             let rel_image_url = internet.open(image_url.as_str())?.header(Query::Location)?;
-            let image_type = extract_extension
-                .captures(&rel_image_url)
-                .ok_or(Error::InvalidImageType)?
-                .get(1)
-                .ok_or(Error::InvalidImageType)?
-                .as_str()
-                .to_string();
+            let image_type = ImageType::from_extension(&rel_image_url)?;
             let mut response = internet.open(&rel_image_url)?.error_for_status()?;
             let mut image_body = Vec::<u8>::new();
             response.read_to_end(&mut image_body)?;
@@ -109,7 +116,7 @@ impl EpisodeIter {
             let image_tag = format!("<img src=\"{}\" />", image_name);
             image_urls.push(ImageInfo {
                 name: image_name,
-                image_type: image_type.parse()?,
+                image_type,
                 body: image_body,
             });
             out.push_str(&image_tag);
