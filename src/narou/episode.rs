@@ -4,7 +4,7 @@ use super::internet::Query;
 use super::unescape::Unescape;
 use crate::epub::Escape;
 use crate::epub::NameId;
-use regex_lite::{Captures, Match, Regex};
+use regex_lite::{Captures, Regex};
 use std::fmt::Display;
 use std::io::Read;
 
@@ -126,6 +126,26 @@ impl EpisodeIter {
         Ok((out, image_urls))
     }
 
+    fn extract(raw_html: &str) -> Option<(Option<&str>, &str, &str)> {
+        let (chapter_title, rest) = match raw_html.split_once("<br>\n<span>") {
+            Some((_, rest)) => rest.split_once("</span>").map(|x| (Some(x.0), x.1))?,
+            None => (None, raw_html),
+        };
+        let (_, rest) = rest.split_once(r#"<h1 class="p-novel__title p-novel__title--rensai">"#)?;
+        let (episode_title, rest) = rest.split_once("</h1>")?;
+        let (_, rest) = rest.split_once(r#"<div class="js-novel-text p-novel__text">"#)?;
+        let (body, _) = rest.split_once("</div>")?;
+
+        Some((chapter_title, episode_title, body))
+    }
+
+    fn extract_short(raw_html: &str) -> Option<&str> {
+        let (_, rest) = raw_html.split_once(r#"<div class="js-novel-text p-novel__text">"#)?;
+        let (body, _) = rest.split_once("</div>")?;
+
+        Some(body)
+    }
+
     fn try_next(&mut self) -> Result<Episode> {
         let uri = if self.series {
             format!("https://ncode.syosetu.com/{}/{}", self.ncode, self.cur)
@@ -138,22 +158,12 @@ impl EpisodeIter {
             .open(&uri)?
             .error_for_status()?
             .read_to_string(&mut text)?;
-        let matcher = Regex::new(if self.series {
-            include_str!("extract.txt")
-        } else {
-            include_str!("short_extract.txt")
-        })
-        .unwrap();
-        let captured = matcher.captures(&text).ok_or(Error::InvalidData)?;
         Ok(if self.series {
-            let body = Self::correct(captured.get(3).ok_or(Error::InvalidData)?.as_str());
+            let (chapter, title, body) = Self::extract(&text).ok_or(Error::InvalidData)?;
+            let body = Self::correct(body);
             let (body, images) = self.image_url_replace(&body)?;
-            let chapter = captured.get(1).map(|x| Match::as_str(&x).unescape());
-            let title = captured
-                .get(2)
-                .ok_or(Error::InvalidData)?
-                .as_str()
-                .unescape();
+            let chapter = chapter.map(|x| x.unescape());
+            let title = title.unescape();
             Episode {
                 number: self.cur,
                 chapter,
@@ -163,7 +173,8 @@ impl EpisodeIter {
                 images,
             }
         } else {
-            let body = Self::correct(captured.get(1).ok_or(Error::InvalidData)?.as_str());
+            let body = Self::extract_short(&text).ok_or(Error::InvalidData)?;
+            let body = Self::correct(body);
             let (body, images) = self.image_url_replace(&body)?;
             Episode {
                 number: self.cur,

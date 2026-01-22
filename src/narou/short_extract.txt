@@ -1,1 +1,0 @@
-(?s)<div class="js-novel-text p-novel__text">(.+?)</div>
