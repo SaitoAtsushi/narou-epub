@@ -47,7 +47,7 @@ impl std::str::FromStr for ImageType {
             "jpg" => Ok(ImageType::Jpg),
             "png" => Ok(ImageType::Png),
             "gif" => Ok(ImageType::Gif),
-            _ => Err(Error::InvalidImageType),
+            _ => Err(Error::UnknownImageType),
         }
     }
 }
