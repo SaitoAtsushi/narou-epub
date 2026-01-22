@@ -10,7 +10,6 @@ use crate::narou::episode::ImageType;
 use epub::{Epub, Escape, IdIter, MediaType, NameId};
 use indicator::Indicator;
 use narou::episode::ImageInfo;
-use regex_lite::Regex;
 use sanitize::sanitize;
 use std::fs::File;
 use std::os::windows::io::{FromRawHandle, OwnedHandle};
@@ -111,8 +110,22 @@ fn make_chapter(title: &str) -> String {
 }
 
 fn ncode_validate_and_normalize(s: &str) -> Option<String> {
-    let valid_pattern = Regex::new("(?i-u)^n[0-9]{4}[[:alpha:]]{0,3}$").unwrap();
-    valid_pattern.is_match(s).then_some(s.to_lowercase())
+    let mut normalized = String::new();
+    let mut iter = s.chars();
+    normalized.push(iter.next().and_then(|ch| {
+        if ch == 'n' || ch == 'N' {
+            Some('n')
+        } else {
+            None
+        }
+    })?);
+    for _ in 0..4 {
+        normalized.push(iter.next().filter(char::is_ascii_digit)?);
+    }
+    for ch in iter {
+        normalized.push(ch.is_ascii_alphabetic().then_some(ch)?);
+    }
+    Some(normalized)
 }
 
 fn image_type_to_media_type(it: ImageType) -> MediaType {
