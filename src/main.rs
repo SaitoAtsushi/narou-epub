@@ -1,3 +1,5 @@
+#[cfg(not(all(target_os = "windows", target_arch = "x86_64")))]
+compile_error!("This project only supports x86_64 Windows. Please use the correct target.");
 mod command;
 mod epub;
 mod indicator;
