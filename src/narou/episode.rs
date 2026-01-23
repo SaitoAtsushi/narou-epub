@@ -4,7 +4,7 @@ use super::internet::Query;
 use super::unescape::Unescape;
 use crate::epub::Escape;
 use crate::epub::NameId;
-use regex_lite::{Captures, Regex};
+use regex_lite::Regex;
 use std::fmt::Display;
 use std::io::Read;
 
@@ -74,26 +74,74 @@ pub struct EpisodeIter {
     pub(super) id: crate::epub::IdIter<NameId>,
 }
 
+trait TextUtil {
+    fn head_and_next(&self) -> Option<(char, &str)>;
+    fn between_and_next(&self, before: &str, after: &str) -> Option<(&str, &str)>;
+}
+
+impl TextUtil for str {
+    // 文字列の最初の文字と最初の文字を除いたスライスを返す
+    fn head_and_next(&self) -> Option<(char, &str)> {
+        if self.is_empty() {
+            None
+        } else {
+            let mut iter = self.char_indices();
+            let (_, ch) = iter.next().unwrap();
+            if let Some((next, _)) = iter.next() {
+                Some((ch, &self[next..]))
+            } else {
+                Some((ch, &self[self.len()..]))
+            }
+        }
+    }
+
+    fn between_and_next(&self, before: &str, after: &str) -> Option<(&str, &str)> {
+        let rest = self.strip_prefix(before)?;
+        let (matched, rest) = rest.split_once(after)?;
+        Some((matched, rest))
+    }
+}
+
 impl EpisodeIter {
     fn correct(s: &str) -> String {
-        let matcher = Regex::new(
-            "(?:(\n)|(<p id=\"L[0-9]+\">)|(<br>)|(<a [^>]*>)|(</a>)|<img src=\"([^\"]+)\" [^/]*/>)",
-        )
-        .unwrap();
-        let corrected = matcher.replace_all(s, |captures: &Captures<'_>| {
-            if captures.get(2).is_some() {
-                "<p>".to_string()
-            } else if captures.get(3).is_some() {
-                "<br />".to_string()
-            } else if captures.get(4).is_some() || captures.get(5).is_some() {
-                "".to_string()
-            } else if let Some(uri) = captures.get(6) {
-                format!("<img src=\"{}\" />", uri.as_str())
+        let mut corrected = String::new();
+        let mut rest = s;
+        while !rest.is_empty() {
+            let (ch, next) = rest.head_and_next().unwrap();
+            if ch == '\n' {
+                rest = next;
+            } else if ch == '<' {
+                if let Some((_, r)) = rest.between_and_next(r#"<p id="L"#, r#"">"#) {
+                    corrected.push_str("<p>");
+                    rest = r;
+                } else if let Some((_, r)) = rest.between_and_next(r#"<a "#, ">") {
+                    rest = r;
+                } else if let Some(r) = rest.strip_prefix("<br>") {
+                    corrected.push_str("<br/>");
+                    rest = r;
+                } else if let Some(r) = rest.strip_prefix("</a>") {
+                    rest = r;
+                } else if let Some((src, r)) = rest.between_and_next(r#"<img src=""#, r#"" "#) {
+                    if let Some((_, r)) = r.split_once("/>") {
+                        corrected.push_str(r#"<img src=""#);
+                        corrected.push_str(src);
+                        corrected.push_str(r#""/>"#);
+                        rest = r;
+                    } else {
+                        corrected.push('<');
+                        rest = next;
+                    }
+                } else {
+                    corrected.push('<');
+                    rest = next;
+                }
             } else {
-                "".to_string()
+                corrected.push(ch);
+                rest = next;
             }
-        });
-        corrected.to_string()
+        }
+
+        corrected
     }
 
     fn image_url_replace(&mut self, html: &str) -> Result<(String, Vec<ImageInfo>)> {
@@ -101,7 +149,7 @@ impl EpisodeIter {
         let mut out = String::new();
         let mut image_urls = Vec::new();
         let mut last = 0;
-        let re = Regex::new("<img src=\"([^\"]+)\" />").unwrap();
+        let re = Regex::new("<img src=\"([^\"]+)\"/>").unwrap();
         for caps in re.captures_iter(html) {
             let m = caps.get(0).unwrap();
             out.push_str(&html[last..m.start()]);
