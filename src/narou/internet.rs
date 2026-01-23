@@ -10,7 +10,7 @@ use windows_sys::Win32::Networking::WinInet::*;
 pub enum Error {
     SystemErrorCode(u32),
     InvalidCharCode,
-    BadStatus,
+    BadStatus(u32),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -164,10 +164,11 @@ impl Response {
     }
 
     pub fn error_for_status(self) -> Result<Self> {
-        if self.status_code()? == 200 {
+        let code = self.status_code()?;
+        if code == 200 {
             Ok(self)
         } else {
-            Err(Error::BadStatus)
+            Err(Error::BadStatus(code))
         }
     }
 }

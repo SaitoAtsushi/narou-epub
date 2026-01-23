@@ -5,7 +5,6 @@ use std::fmt::Display;
 #[derive(Debug)]
 pub enum Error {
     InvalidNcode,
-    FetchFailed,
     InvalidData,
     EpubBuildFailure,
     Interrupted,
@@ -13,13 +12,14 @@ pub enum Error {
     SystemErrorCode(u32),
     IoFailure,
     UnknownImageType,
+    InvalidCharCode,
+    BadStatus(u32),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::InvalidNcode => write!(f, "おそらく NCODE の形式が正しくありません。"),
-            Error::FetchFailed => write!(f, "データの取得に失敗しました。"),
             Error::InvalidData => write!(f, "データの形式が想定したものではありませんでした。"),
             Error::EpubBuildFailure => write!(f, "ePub の生成に失敗しました。"),
             Error::Interrupted => write!(f, "処理が中断されました。"),
@@ -27,6 +27,12 @@ impl Display for Error {
             Error::SystemErrorCode(n) => write!(f, "ウィンドウズのシステムエラーです。 ({})", n),
             Error::IoFailure => write!(f, "データの読み書きに失敗しました。"),
             Error::UnknownImageType => write!(f, "知らない画像形式に遭遇しました。"),
+            Error::InvalidCharCode => write!(f, "文字コードが不正です。"),
+            Error::BadStatus(code) => write!(
+                f,
+                "HTTP レスポンスのステータスコード ({}) が想定外です。",
+                code
+            ),
         }
     }
 }
@@ -35,7 +41,8 @@ impl From<internet::Error> for Error {
     fn from(value: internet::Error) -> Self {
         match value {
             internet::Error::SystemErrorCode(n) => Self::SystemErrorCode(n),
-            _ => Error::FetchFailed,
+            internet::Error::InvalidCharCode => Self::InvalidCharCode,
+            internet::Error::BadStatus(code) => Self::BadStatus(code),
         }
     }
 }

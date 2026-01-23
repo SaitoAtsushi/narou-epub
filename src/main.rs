@@ -123,7 +123,10 @@ fn ncode_validate_and_normalize(s: &str) -> Option<String> {
         normalized.push(iter.next().filter(char::is_ascii_digit)?);
     }
     for ch in iter {
-        normalized.push(ch.is_ascii_alphabetic().then_some(ch)?);
+        normalized.push(
+            ch.is_ascii_alphabetic()
+                .then_some(ch.to_ascii_lowercase())?,
+        );
     }
     Some(normalized)
 }
@@ -261,5 +264,17 @@ fn main() {
             println!("{}", x);
             std::process::exit(2);
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(ncode_validate_and_normalize("n1234a").unwrap(), "n1234a");
+        assert_eq!(ncode_validate_and_normalize("N1234a").unwrap(), "n1234a");
+        assert_eq!(ncode_validate_and_normalize("n1234A").unwrap(), "n1234a");
     }
 }
