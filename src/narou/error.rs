@@ -1,6 +1,5 @@
 use super::internet;
 use std::fmt::Display;
-// use windows_sys::Win32::Foundation::WIN32_ERROR;
 
 #[derive(Debug)]
 pub enum Error {
@@ -44,12 +43,6 @@ impl From<internet::Error> for Error {
             internet::Error::InvalidCharCode => Self::InvalidCharCode,
             internet::Error::BadStatus(code) => Self::BadStatus(code),
         }
-    }
-}
-
-impl From<regex_lite::Error> for Error {
-    fn from(_: regex_lite::Error) -> Self {
-        Error::InvalidData
     }
 }
 

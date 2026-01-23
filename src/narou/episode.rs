@@ -4,7 +4,6 @@ use super::internet::Query;
 use super::unescape::Unescape;
 use crate::epub::Escape;
 use crate::epub::NameId;
-use regex_lite::Regex;
 use std::fmt::Display;
 use std::io::Read;
 
@@ -77,6 +76,7 @@ pub struct EpisodeIter {
 trait TextUtil {
     fn head_and_next(&self) -> Option<(char, &str)>;
     fn between_and_next(&self, before: &str, after: &str) -> Option<(&str, &str)>;
+    fn find_between_and_next(&self, before: &str, after: &str) -> Option<(&str, &str, &str)>;
 }
 
 impl TextUtil for str {
@@ -99,6 +99,12 @@ impl TextUtil for str {
         let rest = self.strip_prefix(before)?;
         let (matched, rest) = rest.split_once(after)?;
         Some((matched, rest))
+    }
+
+    fn find_between_and_next(&self, before: &str, after: &str) -> Option<(&str, &str, &str)> {
+        let (processed, rest) = self.split_once(before)?;
+        let (center, rest) = rest.split_once(after)?;
+        Some((processed, center, rest))
     }
 }
 
@@ -148,29 +154,32 @@ impl EpisodeIter {
         let internet = Internet::new()?;
         let mut out = String::new();
         let mut image_urls = Vec::new();
-        let mut last = 0;
-        let re = Regex::new("<img src=\"([^\"]+)\"/>").unwrap();
-        for caps in re.captures_iter(html) {
-            let m = caps.get(0).unwrap();
-            out.push_str(&html[last..m.start()]);
-            let image_url = caps.get(1).unwrap().as_str().to_string();
-            let image_url = "https:".to_string() + &image_url;
-            let rel_image_url = internet.open(image_url.as_str())?.header(Query::Location)?;
-            let image_type = ImageType::from_extension(&rel_image_url)?;
-            let mut response = internet.open(&rel_image_url)?.error_for_status()?;
-            let mut image_body = Vec::<u8>::new();
-            response.read_to_end(&mut image_body)?;
-            let image_name = format!("{}.{}", self.id.next().unwrap(), image_type);
-            let image_tag = format!("<img src=\"{}\" />", image_name);
-            image_urls.push(ImageInfo {
-                name: image_name,
-                image_type,
-                body: image_body,
-            });
-            out.push_str(&image_tag);
-            last = m.end();
+        let mut rest = html;
+        loop {
+            if let Some((processed, image_url, r)) =
+                rest.find_between_and_next("<img src=\"", "\"/>")
+            {
+                let image_url = format!("https:{}", image_url);
+                let rel_image_url = internet.open(image_url.as_str())?.header(Query::Location)?;
+                let image_type = ImageType::from_extension(&rel_image_url)?;
+                let mut response = internet.open(&rel_image_url)?.error_for_status()?;
+                let mut image_body = Vec::<u8>::new();
+                response.read_to_end(&mut image_body)?;
+                let image_name = format!("{}.{}", self.id.next().unwrap(), image_type);
+                let image_tag = format!("<img src=\"{}\" />", image_name);
+                image_urls.push(ImageInfo {
+                    name: image_name,
+                    image_type,
+                    body: image_body,
+                });
+                out.push_str(processed);
+                out.push_str(&image_tag);
+                rest = r;
+            } else {
+                out.push_str(rest);
+                break;
+            }
         }
-        out.push_str(&html[last..]);
         Ok((out, image_urls))
     }
 
