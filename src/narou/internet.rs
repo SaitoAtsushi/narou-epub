@@ -51,9 +51,10 @@ impl Internet {
 
     pub fn open(&self, url: &str) -> Result<Response> {
         unsafe {
+            let nullterminated_url_string = [url, "\0"].concat();
             let handle = InternetOpenUrlA(
                 self.handle,
-                format!("{}\0", url).as_ptr(),
+                nullterminated_url_string.as_ptr(),
                 null(),
                 0,
                 INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE | INTERNET_FLAG_NO_AUTO_REDIRECT,
