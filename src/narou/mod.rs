@@ -25,9 +25,12 @@ pub struct Novel {
 
 impl Novel {
     pub fn new(ncode: &str) -> Result<Self> {
-        let uri = format!(
-            "https://api.syosetu.com/novelapi/api/?ncode={ncode}&out=json&of=t-nu-s-w-u-nt-ga"
-        );
+        let uri = [
+            "https://api.syosetu.com/novelapi/api/?ncode=",
+            ncode,
+            "&out=json&of=t-nu-s-w-u-nt-ga",
+        ]
+        .concat();
         let internet = Internet::new()?;
         let mut response = String::new();
         internet
@@ -78,7 +81,7 @@ impl Novel {
             .get("general_all_no")
             .and_then(JsonNode::get_number)
             .ok_or(Error::InvalidData)?;
-        let uri = format!("https://api.syosetu.com/userapi/api/?userid={userid}&out=json&of=y",);
+        let uri = format!("https://api.syosetu.com/userapi/api/?userid={userid}&out=json&of=y");
         let mut response = String::new();
         internet
             .open(&uri)?

@@ -1,5 +1,5 @@
 /// 入力を日本時間として解釈して UTC として保持する
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 use std::str::FromStr;
 
 #[derive(PartialEq, Debug)]
@@ -140,14 +140,39 @@ impl Time {
     }
 }
 
+trait WriteFixWidth {
+    fn write_fix_width<const WIDTH: usize>(&mut self, n: u32) -> std::fmt::Result;
+}
+
+impl WriteFixWidth for std::fmt::Formatter<'_> {
+    fn write_fix_width<const WIDTH: usize>(&mut self, mut n: u32) -> std::fmt::Result {
+        let mut a = [0_u8; WIDTH];
+        for i in (0..WIDTH).rev() {
+            a[i] = (n % 10) as u8 + b'0';
+            n /= 10;
+        }
+        for ch in a {
+            self.write_char(ch as char)?;
+        }
+        Ok(())
+    }
+}
+
 impl Display for Time {
     /// ISO 8601の形式で表示する
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-            self.year, self.month, self.day, self.hour, self.minute, self.second
-        )
+        f.write_fix_width::<4>(self.year as _)?;
+        f.write_char('-')?;
+        f.write_fix_width::<2>(self.month as _)?;
+        f.write_char('-')?;
+        f.write_fix_width::<2>(self.day as _)?;
+        f.write_char('T')?;
+        f.write_fix_width::<2>(self.hour as _)?;
+        f.write_char(':')?;
+        f.write_fix_width::<2>(self.minute as _)?;
+        f.write_char(':')?;
+        f.write_fix_width::<2>(self.second as _)?;
+        f.write_char('Z')
     }
 }
 

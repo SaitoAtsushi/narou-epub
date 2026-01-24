@@ -312,11 +312,11 @@ impl<'a> Epub<'a> {
 
     fn make_content(&self) -> String {
         let author = if let Some((ref author, ref yomigana)) = self.author {
-            format!(
-                r##"<dc:creator id="creator">{}</dc:creator><meta refines="#creator" property="role" scheme="marc:relators">aut</meta><meta refines="#creator" property="file-as">{}</meta>"##,
-                author.escape(),
-                yomigana.escape()
-            )
+            [r#"<dc:creator id="creator">"#, 
+                &author.escape(),
+                r##"</dc:creator><meta refines="#creator" property="role" scheme="marc:relators">aut</meta><meta refines="#creator" property="file-as">"##,
+                &yomigana.escape(),
+                 r#"</meta>"#].concat()
         } else {
             "".to_string()
         };

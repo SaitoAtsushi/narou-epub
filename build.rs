@@ -8,7 +8,7 @@ fn main() {
         let resource_file = format!("{}/resource.o", out_dir);
 
         let status = Command::new("windres")
-            .args(&["resource.rc", "-O", "coff", "-o", &resource_file])
+            .args(["resource.rc", "-O", "coff", "-o", &resource_file])
             .status()
             .expect("Failed to execute windres. Make sure MinGW-w64 bin folder is in your PATH.");
 

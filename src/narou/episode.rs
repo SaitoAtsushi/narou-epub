@@ -159,14 +159,14 @@ impl EpisodeIter {
             if let Some((processed, image_url, r)) =
                 rest.find_between_and_next("<img src=\"", "\"/>")
             {
-                let image_url = format!("https:{}", image_url);
+                let image_url = ["https:", image_url].concat();
                 let rel_image_url = internet.open(image_url.as_str())?.header(Query::Location)?;
                 let image_type = ImageType::from_extension(&rel_image_url)?;
                 let mut response = internet.open(&rel_image_url)?.error_for_status()?;
                 let mut image_body = Vec::<u8>::new();
                 response.read_to_end(&mut image_body)?;
                 let image_name = format!("{}.{}", self.id.next().unwrap(), image_type);
-                let image_tag = format!("<img src=\"{}\" />", image_name);
+                let image_tag = ["<img src=\"", &image_name, "\"/>"].concat();
                 image_urls.push(ImageInfo {
                     name: image_name,
                     image_type,
@@ -207,7 +207,7 @@ impl EpisodeIter {
         let uri = if self.series {
             format!("https://ncode.syosetu.com/{}/{}", self.ncode, self.cur)
         } else {
-            format!("https://ncode.syosetu.com/{}", self.ncode)
+            ["https://ncode.syosetu.com/", &self.ncode].concat()
         };
         let internet = Internet::new()?;
         let mut text = String::new();

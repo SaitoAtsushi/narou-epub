@@ -1,1 +1,0 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja"><head><title>{0}</title><link rel="stylesheet" href="style.css"/></head><body class="titlepage"><h1>{0}</h1><p>{1}</p></body></html>

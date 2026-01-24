@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Write};
 use windows_sys::Win32::Foundation::STATUS_SUCCESS;
 use windows_sys::Win32::Security::Cryptography::{
     BCRYPT_SHA1_ALGORITHM, BCryptCloseAlgorithmProvider, BCryptHash, BCryptOpenAlgorithmProvider,
@@ -76,28 +76,40 @@ impl UUIDv5 {
     }
 }
 
+pub trait WriteByte {
+    fn write_byte(&mut self, byte: u8) -> std::fmt::Result;
+}
+
+impl WriteByte for std::fmt::Formatter<'_> {
+    fn write_byte(&mut self, byte: u8) -> std::fmt::Result {
+        const DIGIT_CHAR: &[u8; 16] = b"0123456789abcdef";
+        self.write_char(char::from(DIGIT_CHAR[byte as usize / 16]))?;
+        self.write_char(char::from(DIGIT_CHAR[byte as usize % 16]))
+    }
+}
+
 impl Display for UUIDv5 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-            self.uuid[0],
-            self.uuid[1],
-            self.uuid[2],
-            self.uuid[3],
-            self.uuid[4],
-            self.uuid[5],
-            self.uuid[6],
-            self.uuid[7],
-            self.uuid[8],
-            self.uuid[9],
-            self.uuid[10],
-            self.uuid[11],
-            self.uuid[12],
-            self.uuid[13],
-            self.uuid[14],
-            self.uuid[15]
-        )
+        f.write_byte(self.uuid[0])?;
+        f.write_byte(self.uuid[1])?;
+        f.write_byte(self.uuid[2])?;
+        f.write_byte(self.uuid[3])?;
+        f.write_char('-')?;
+        f.write_byte(self.uuid[4])?;
+        f.write_byte(self.uuid[5])?;
+        f.write_char('-')?;
+        f.write_byte(self.uuid[6])?;
+        f.write_byte(self.uuid[7])?;
+        f.write_char('-')?;
+        f.write_byte(self.uuid[8])?;
+        f.write_byte(self.uuid[9])?;
+        f.write_char('-')?;
+        f.write_byte(self.uuid[10])?;
+        f.write_byte(self.uuid[11])?;
+        f.write_byte(self.uuid[12])?;
+        f.write_byte(self.uuid[13])?;
+        f.write_byte(self.uuid[14])?;
+        f.write_byte(self.uuid[15])
     }
 }
 

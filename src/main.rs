@@ -100,15 +100,27 @@ impl Drop for TemporaryFile {
 }
 
 fn make_title_page(novel: &narou::Novel) -> String {
-    format!(
-        include_str!("title_page.txt"),
-        novel.title().escape(),
-        novel.author_name().escape()
-    )
+    [
+        r#"<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja"><head><title>"#,
+        &novel.title().escape(),
+        r#"</title><link rel="stylesheet" href="style.css"/></head><body class="titlepage"><h1>"#,
+        &novel.title().escape(),
+        r#"</h1><p>"#,
+        &novel.author_name().escape(),
+        r#"</p></body></html>"#,
+    ]
+    .concat()
 }
 
 fn make_chapter(title: &str) -> String {
-    format!(include_str!("chapter.txt"), title)
+    [
+        r#"<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja"><head><title>"#,
+        title,
+        r#"</title><link rel="stylesheet" href="style.css"/></head><body class="titlepage"><h1>"#,
+        title,
+        r#"</h1></body></html>"#,
+    ]
+    .concat()
 }
 
 fn ncode_validate_and_normalize(s: &str) -> Option<String> {
@@ -146,14 +158,19 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
     let novel = narou::Novel::new(&ncode)?;
     eprintln!("{}", novel.title());
     let mut pb = Indicator::new(novel.episode()).ok();
-    let mut temporary = TemporaryFile::new(&format!(
-        "[{}] {}.epub",
-        sanitize(novel.author_name()),
-        sanitize(novel.title())
-    ))
+    let mut temporary = TemporaryFile::new(
+        &[
+            "[",
+            &sanitize(novel.author_name()),
+            "] ",
+            &sanitize(novel.title()),
+            ".epub",
+        ]
+        .concat(),
+    )
     .or(Err(narou::Error::EpubBuildFailure))?;
     let mut epub = Epub::new(temporary.handle.as_mut().unwrap())?;
-    epub.set_source(format!("https://ncode.syosetu.com/{}/", ncode));
+    epub.set_source(["https://ncode.syosetu.com/", &ncode, "]"].concat());
     epub.set_author(
         novel.author_name().to_string(),
         novel.author_yomigana().to_string(),
