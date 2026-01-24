@@ -19,45 +19,26 @@ pub struct Time {
     second: u8,
 }
 
-fn is_some_and_nums<T: Iterator<Item = char>>(iter: &mut T, count: u32) -> Result<u32, Error> {
-    let mut acc = 0;
-    for _ in 0..count {
-        acc = acc * 10
-            + iter
-                .next()
-                .ok_or(Error::EarlyTermination)?
-                .to_digit(10)
-                .ok_or(Error::UnexpectedChar)?;
-    }
-    Ok(acc)
-}
-
-fn is_some_and_same(x: Option<char>, ch: char) -> Result<(), Error> {
-    if x.ok_or(Error::UnexpectedChar)? == ch {
-        Ok(())
-    } else {
-        Err(Error::UnexpectedChar)
-    }
-}
-
 impl FromStr for Time {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut iter = s.chars();
-        let year = is_some_and_nums(&mut iter, 4)? as u16;
-        is_some_and_same(iter.next(), '-')?;
-        let month = is_some_and_nums(&mut iter, 2)? as u8;
-        is_some_and_same(iter.next(), '-')?;
-        let day = is_some_and_nums(&mut iter, 2)? as u8;
-        is_some_and_same(iter.next(), ' ')?;
-        let hour = is_some_and_nums(&mut iter, 2)? as u8;
-        is_some_and_same(iter.next(), ':')?;
-        let minute = is_some_and_nums(&mut iter, 2)? as u8;
-        is_some_and_same(iter.next(), ':')?;
-        let second = is_some_and_nums(&mut iter, 2)? as u8;
-        if iter.next().is_some() {
+        if s.len() != 19 && s.as_bytes().iter().all(u8::is_ascii_graphic) {
+            return Err(Error::EarlyTermination);
+        };
+        if s.as_bytes()[4] != b'-'
+            || s.as_bytes()[7] != b'-'
+            || s.as_bytes()[10] != b' '
+            || s.as_bytes()[13] != b':'
+            || s.as_bytes()[16] != b':'
+        {
             return Err(Error::UnexpectedChar);
         }
+        let year: u16 = s[0..=3].parse().map_err(|_| Error::UnexpectedChar)?;
+        let month = s[5..=6].parse().map_err(|_| Error::UnexpectedChar)?;
+        let day = s[8..=9].parse().map_err(|_| Error::UnexpectedChar)?;
+        let hour = s[11..=12].parse().map_err(|_| Error::UnexpectedChar)?;
+        let minute = s[14..=15].parse().map_err(|_| Error::UnexpectedChar)?;
+        let second = s[17..=18].parse().map_err(|_| Error::UnexpectedChar)?;
 
         Time::new(year, month, day, hour, minute, second)
     }
