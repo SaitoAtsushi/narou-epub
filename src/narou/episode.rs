@@ -3,7 +3,6 @@ pub use super::error::{Error, Result};
 use super::internet::Query;
 use super::unescape::Unescape;
 use crate::epub::Escape;
-use crate::epub::NameId;
 use std::fmt::Display;
 use std::io::Read;
 
@@ -70,7 +69,7 @@ pub struct EpisodeIter {
     pub(super) max: u32,
     pub(super) series: bool,
     pub(super) ncode: String,
-    pub(super) id: crate::epub::IdIter<NameId>,
+    pub(super) id: crate::epub::NameId,
 }
 
 trait TextUtil {

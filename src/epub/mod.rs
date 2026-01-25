@@ -5,8 +5,7 @@ mod id;
 pub mod time;
 use super::uuid::UUIDv5;
 pub use escape::Escape;
-use id::Id;
-pub use id::{IdIter, ItemId, NameId};
+pub use id::{ItemId, NameId};
 use time::Time;
 
 #[derive(PartialEq)]
@@ -57,14 +56,14 @@ struct ContentMetadata {
     media_type: MediaType,
     reftype: ReferenceType,
     level: u32,
-    id: Id<ItemId>,
+    id: String,
 }
 
 struct ResourceMetadata {
     name: String,
     media_type: MediaType,
     reftype: ReferenceType,
-    id: Id<ItemId>,
+    id: String,
 }
 
 pub enum Direction {
@@ -91,7 +90,7 @@ pub struct Epub<'a> {
     contents: Vec<ContentMetadata>,
     resources: Vec<ResourceMetadata>,
     direction: Direction,
-    id_iter: IdIter<ItemId>,
+    id_iter: ItemId,
 }
 
 struct Manifest<'a, 'b> {
@@ -226,7 +225,7 @@ impl<'a> Epub<'a> {
             contents: vec![],
             resources: vec![],
             direction: Direction::Rtl,
-            id_iter: IdIter::new(),
+            id_iter: ItemId::new(),
         })
     }
 

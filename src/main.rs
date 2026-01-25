@@ -9,7 +9,7 @@ mod sanitize;
 mod uuid;
 use crate::epub::ReferenceType;
 use crate::narou::episode::ImageType;
-use epub::{Epub, Escape, IdIter, MediaType, NameId};
+use epub::{Epub, Escape, MediaType, NameId};
 use indicator::Indicator;
 use narou::episode::ImageInfo;
 use sanitize::sanitize;
@@ -205,7 +205,7 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
         make_title_page(&novel).as_bytes(),
     )?;
     let mut prev_chapter: Option<String> = None;
-    let mut filename_iter = IdIter::<NameId>::new();
+    let mut filename_iter = NameId::new();
     for i in novel.episodes()? {
         if INTERRUPTED.load(std::sync::atomic::Ordering::SeqCst) {
             return Err(narou::Error::Interrupted);

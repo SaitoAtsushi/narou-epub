@@ -8,7 +8,7 @@ pub use error::{Error, Result};
 use std::io::Read;
 use unescape::Unescape;
 pub const AGENT_NAME: &str = concat!("narou-epub-agent/", env!("CARGO_PKG_VERSION"));
-use crate::epub::{IdIter, NameId};
+use crate::epub::NameId;
 use crate::json::{JsonNode, Query};
 use internet::Internet;
 
@@ -121,7 +121,7 @@ impl Novel {
             max: self.episode,
             series: self.series,
             ncode: self.ncode.clone(),
-            id: IdIter::<NameId>::new(),
+            id: NameId::new(),
         })
     }
 

@@ -1,96 +1,70 @@
-use std::fmt::Write;
-use std::marker::PhantomData;
-
-pub trait IdPolicy: From<usize> + Into<usize> {
-    const FIRST_LETTER: &[u8];
-    const LETTER: &[u8];
-    fn number(&self) -> usize;
-}
-
 pub struct ItemId {
     number: usize,
+}
+
+impl ItemId {
+    pub fn new() -> Self {
+        Self { number: 0 }
+    }
 }
 
 pub struct NameId {
     number: usize,
 }
 
-impl From<usize> for ItemId {
-    fn from(number: usize) -> Self {
-        Self { number }
+impl NameId {
+    pub fn new() -> Self {
+        Self { number: 0 }
     }
 }
 
-impl From<ItemId> for usize {
-    fn from(id: ItemId) -> Self {
-        id.number
+trait IdIter {
+    const FIRST_LETTER: &[u8];
+    const LETTER: &[u8];
+    fn number(&mut self) -> usize;
+    fn next_id(&mut self) -> String {
+        let mut n = self.number();
+        let mut newstr = String::new();
+        newstr.push(Self::FIRST_LETTER[n % Self::FIRST_LETTER.len()].into());
+        n /= Self::FIRST_LETTER.len();
+        while n != 0 {
+            newstr.push(Self::LETTER[n % Self::LETTER.len()].into());
+            n /= Self::LETTER.len();
+        }
+        newstr
     }
 }
 
-impl From<usize> for NameId {
-    fn from(number: usize) -> Self {
-        Self { number }
-    }
-}
-
-impl From<NameId> for usize {
-    fn from(id: NameId) -> Self {
-        id.number
-    }
-}
-
-impl IdPolicy for ItemId {
-    const FIRST_LETTER: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    const LETTER: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    fn number(&self) -> usize {
-        self.number
-    }
-}
-
-impl IdPolicy for NameId {
+impl IdIter for NameId {
     const FIRST_LETTER: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
     const LETTER: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-    fn number(&self) -> usize {
-        self.number
-    }
-}
-
-pub struct Id<T: IdPolicy> {
-    policy: T,
-}
-
-impl<T: IdPolicy> std::fmt::Display for Id<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut n = self.policy.number();
-        f.write_char(T::FIRST_LETTER[n % T::FIRST_LETTER.len()].into())?;
-        n /= T::FIRST_LETTER.len();
-        while n != 0 {
-            f.write_char(T::LETTER[n % T::LETTER.len()].into())?;
-            n /= T::LETTER.len();
-        }
-        Ok(())
-    }
-}
-
-pub struct IdIter<T> {
-    number: usize,
-    phantom: PhantomData<T>,
-}
-
-impl<T: IdPolicy> IdIter<T> {
-    pub fn new() -> Self {
-        IdIter {
-            number: 0,
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl<T: IdPolicy> Iterator for IdIter<T> {
-    type Item = Id<T>;
-    fn next(&mut self) -> Option<Self::Item> {
+    fn number(&mut self) -> usize {
         let t = self.number;
         self.number += 1;
-        Some(Id { policy: T::from(t) })
+        t
+    }
+}
+
+impl Iterator for NameId {
+    type Item = String;
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(self.next_id())
+    }
+}
+
+impl IdIter for ItemId {
+    const FIRST_LETTER: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    const LETTER: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    fn number(&mut self) -> usize {
+        let t = self.number;
+        self.number += 1;
+        t
+    }
+}
+
+impl Iterator for ItemId {
+    type Item = String;
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(self.next_id())
     }
 }
