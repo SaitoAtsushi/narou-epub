@@ -7,7 +7,7 @@ use episode::EpisodeIter;
 pub use error::{Error, Result};
 use std::io::Read;
 use unescape::Unescape;
-pub const AGENT_NAME: &str = concat!("narou-epub-agent/", env!("CARGO_PKG_VERSION"));
+pub const AGENT_NAME: &str = concat!("narou-epub-agent/", env!("CARGO_PKG_VERSION"), "\0");
 use crate::epub::NameId;
 use crate::json::{JsonNode, Query};
 use internet::Internet;
