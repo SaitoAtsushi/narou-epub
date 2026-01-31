@@ -69,7 +69,7 @@ pub struct EpisodeIter {
     pub(super) max: u32,
     pub(super) series: bool,
     pub(super) ncode: String,
-    pub(super) id: crate::epub::NameId,
+    pub(super) id: crate::epub::Id,
 }
 
 trait TextUtil {

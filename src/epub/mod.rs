@@ -5,7 +5,7 @@ mod id;
 pub mod time;
 use super::uuid::UUIDv5;
 pub use escape::Escape;
-pub use id::{ItemId, NameId};
+pub use id::Id;
 use time::Time;
 
 #[derive(PartialEq)]
@@ -90,7 +90,7 @@ pub struct Epub<'a> {
     contents: Vec<ContentMetadata>,
     resources: Vec<ResourceMetadata>,
     direction: Direction,
-    id_iter: ItemId,
+    id_iter: Id,
 }
 
 struct Manifest<'a, 'b> {
@@ -225,7 +225,7 @@ impl<'a> Epub<'a> {
             contents: vec![],
             resources: vec![],
             direction: Direction::Rtl,
-            id_iter: ItemId::new(),
+            id_iter: Id::new_for_id(),
         })
     }
 
