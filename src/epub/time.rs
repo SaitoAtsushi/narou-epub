@@ -22,7 +22,7 @@ pub struct Time {
 impl FromStr for Time {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() != 19 && s.as_bytes().iter().all(u8::is_ascii_graphic) {
+        if s.len() != 19 || s.as_bytes().iter().all(u8::is_ascii_graphic) {
             return Err(Error::EarlyTermination);
         };
         if s.as_bytes()[4] != b'-'
