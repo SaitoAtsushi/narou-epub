@@ -6,7 +6,7 @@ pub mod time;
 use super::uuid::UUIDv5;
 pub use escape::Escape;
 pub use id::Id;
-use time::Time;
+use utcdatetime::DateTime;
 
 #[derive(PartialEq)]
 pub enum ReferenceType {
@@ -84,7 +84,7 @@ pub struct Epub<'a> {
     zip: ZipArchive<'a, File>,
     title: String,
     author: Option<(String, String)>,
-    modified: Option<Time>,
+    modified: Option<DateTime>,
     description: Option<String>,
     source: Option<String>,
     contents: Vec<ContentMetadata>,
@@ -239,7 +239,7 @@ impl<'a> Epub<'a> {
         self
     }
 
-    pub fn set_modified(&mut self, modified: Time) -> &mut Self {
+    pub fn set_modified(&mut self, modified: DateTime) -> &mut Self {
         self.modified = Some(modified);
         self
     }

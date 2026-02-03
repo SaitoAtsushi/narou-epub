@@ -2,11 +2,12 @@ pub mod episode;
 mod error;
 mod internet;
 mod unescape;
-use crate::epub::time::Time;
+use super::epub::time::FromJST;
 use episode::EpisodeIter;
 pub use error::{Error, Result};
 use std::io::Read;
 use unescape::Unescape;
+use utcdatetime::DateTime;
 pub const AGENT_NAME: &str = concat!("narou-epub-agent/", env!("CARGO_PKG_VERSION"), "\0");
 use crate::epub::Id;
 use crate::json::{JsonNode, Query};
@@ -17,7 +18,7 @@ pub struct Novel {
     title: String,
     author_name: String,
     author_yomigana: String,
-    last_update: Time,
+    last_update: DateTime,
     story: String,
     series: bool,
     episode: u32,
@@ -72,11 +73,13 @@ impl Novel {
             .and_then(JsonNode::get_string)
             .ok_or(Error::InvalidData)?
             .unescape();
-        let last_update: Time = object
-            .get("novelupdated_at")
-            .and_then(JsonNode::get_string)
-            .ok_or(Error::InvalidData)?
-            .parse()?;
+        let last_update: DateTime = DateTime::from_jst_str(
+            object
+                .get("novelupdated_at")
+                .and_then(JsonNode::get_string)
+                .ok_or(Error::InvalidData)?
+                .as_str(),
+        )?;
         let episode = object
             .get("general_all_no")
             .and_then(JsonNode::get_number)
@@ -141,7 +144,7 @@ impl Novel {
         &self.story
     }
 
-    pub fn last_update(&self) -> &Time {
+    pub fn last_update(&self) -> &DateTime {
         &self.last_update
     }
 

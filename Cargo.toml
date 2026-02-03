@@ -22,7 +22,8 @@ windows-sys = { version = "0.61.2", features = [
     "Win32_System_Environment",
     "Win32_UI_Shell",
 ] }
-zip-builder = { git = "https://github.com/SaitoAtsushi/zip-builder.git", tag = "0.1" }
+zip-builder = { git = "https://github.com/SaitoAtsushi/zip-builder.git", tag = "0.2" }
+utcdatetime = { git = "https://github.com/SaitoAtsushi/utcdatetime.git", tag = "0.1" }
 
 [profile.release]
 opt-level = 3

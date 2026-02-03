@@ -52,8 +52,8 @@ impl From<zip_builder::Error> for Error {
     }
 }
 
-impl From<super::super::epub::time::Error> for Error {
-    fn from(_: super::super::epub::time::Error) -> Self {
+impl From<utcdatetime::DateTimeParseError> for Error {
+    fn from(_: utcdatetime::DateTimeParseError) -> Self {
         Error::InvalidData
     }
 }
