@@ -170,7 +170,7 @@ fn make_epub(ncode: &str, horizontal: bool, wait: f64) -> std::result::Result<()
     )
     .or(Err(narou::Error::EpubBuildFailure))?;
     let mut epub = Epub::new(temporary.handle.as_mut().unwrap())?;
-    epub.set_source(["https://ncode.syosetu.com/", &ncode, "]"].concat());
+    epub.set_source(["https://ncode.syosetu.com/", &ncode, "/"].concat());
     epub.set_author(
         novel.author_name().to_string(),
         novel.author_yomigana().to_string(),
